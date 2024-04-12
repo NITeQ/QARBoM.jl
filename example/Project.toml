@@ -1,0 +1,4 @@
+[deps]
+ImageInTerminal = "d8c32880-2388-543b-8c61-d9f865259254"
+ImageShow = "4e3cecfd-b093-5904-9786-8bbb286a6a31"
+MLDatasets = "eb30cadb-4394-5ae3-aed4-317e484a6458"
