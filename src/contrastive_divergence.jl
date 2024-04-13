@@ -29,5 +29,5 @@ function contrastive_divergence(
         # Update loss
         loss += sum((v_test - v_estimate) .^ 2)
     end
-    return loss
+    return loss / length(x)
 end
