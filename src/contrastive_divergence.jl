@@ -28,7 +28,7 @@ function contrastive_divergence(
         t_gibbs = time()
         v_estimate = get_v_estimate(rbm, v_test, steps) # v~
         h_estimate = sample_hidden(rbm, v_estimate) # h~
-        total_t_gibbs = time() - t_gibbs
+        total_t_gibbs += time() - t_gibbs
 
         # Update hyperparameters
         t_update = time()
@@ -38,7 +38,7 @@ function contrastive_divergence(
 
         # Update loss
         loss += sum((v_test - v_estimate) .^ 2)
-        total_t_update = time() - t_update
+        total_t_update += time() - t_update
     end
     return loss / length(x), total_t_sample, total_t_gibbs, total_t_update
 end
