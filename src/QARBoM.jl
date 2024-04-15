@@ -1,6 +1,7 @@
 module QARBoM
 
 using Printf
+using Distributions
 
 abstract type AbstractRBM end
 abstract type AbstractMethod end
