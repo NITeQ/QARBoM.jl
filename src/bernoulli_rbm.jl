@@ -7,7 +7,7 @@ mutable struct BernoulliRBM <: AbstractRBM
 end
 
 function BernoulliRBM(n_visible::Int, n_hidden::Int)
-    W = randn(n_visible, n_hidden) * 0.01
+    W = randn(n_visible, n_hidden)
     a = zeros(n_visible)
     b = zeros(n_hidden)
     return BernoulliRBM(W, a, b, n_visible, n_hidden)
@@ -50,16 +50,16 @@ function _prob_h(rbm::BernoulliRBM, h::Vector{Int})
 end
 
 # P(vᵢ = 1 | h) = sigmoid(aᵢ + Σⱼ Wᵢⱼ hⱼ)
-function _prob_v_given_h(rbm::BernoulliRBM, v_i::Int, h::Vector{Int})
+function _prob_v_given_h(rbm::BernoulliRBM, v_i::Int, h::Vector{T}) where T <: Union{Int, Float64}
     return _sigmoid(
-        rbm.a[v_i] + sum(rbm.W[v_i, h_j] * h[h_j] for h_j = 1:num_hidden_nodes(rbm)),
+        rbm.a[v_i] + rbm.W[v_i, :]' * h,
     )
 end
 
 # P(hⱼ = 1 | v) = sigmoid(bⱼ + Σᵢ Wᵢⱼ vᵢ)
-function _prob_h_given_v(rbm::BernoulliRBM, h_i::Int, v::Vector{Int})
+function _prob_h_given_v(rbm::BernoulliRBM, h_i::Int, v::Vector{T}) where T <: Union{Int, Float64}
     return _sigmoid(
-        rbm.b[h_i] + sum(rbm.W[v_i, h_i] * v[v_i] for v_i = 1:num_visible_nodes(rbm)),
+        rbm.b[h_i] + rbm.W[:, h_i]' * v,
     )
 end
 
@@ -74,7 +74,7 @@ gibbs_sample_hidden(rbm::BernoulliRBM, v::Vector{Int}) =
 gibbs_sample_visible(rbm::BernoulliRBM, h::Vector{Int}) =
     [rand() < _prob_v_given_h(rbm, v_i, h) ? 1 : 0 for v_i = 1:num_visible_nodes(rbm)]
 
-conditional_prob_h(rbm::BernoulliRBM, v::Vector{Int}) =
+conditional_prob_h(rbm::BernoulliRBM, v::Vector{T}) where T <: Union{Int, Float64} =
     [_prob_h_given_v(rbm, h_i, v) for h_i = 1:num_hidden_nodes(rbm)]
-conditional_prob_v(rbm::BernoulliRBM, h::Vector{Int}) =
+conditional_prob_v(rbm::BernoulliRBM, h::Vector{T}) where T <: Union{Int, Float64} =
     [_prob_v_given_h(rbm, v_i, h) for v_i = 1:num_visible_nodes(rbm)]
