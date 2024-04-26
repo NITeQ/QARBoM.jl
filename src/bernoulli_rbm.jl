@@ -50,17 +50,21 @@ function _prob_h(rbm::BernoulliRBM, h::Vector{Int})
 end
 
 # P(vᵢ = 1 | h) = sigmoid(aᵢ + Σⱼ Wᵢⱼ hⱼ)
-function _prob_v_given_h(rbm::BernoulliRBM, v_i::Int, h::Vector{T}) where T <: Union{Int, Float64}
-    return _sigmoid(
-        rbm.a[v_i] + rbm.W[v_i, :]' * h,
-    )
+function _prob_v_given_h(
+    rbm::BernoulliRBM,
+    v_i::Int,
+    h::Vector{T},
+) where {T<:Union{Int,Float64}}
+    return _sigmoid(rbm.a[v_i] + rbm.W[v_i, :]' * h)
 end
 
 # P(hⱼ = 1 | v) = sigmoid(bⱼ + Σᵢ Wᵢⱼ vᵢ)
-function _prob_h_given_v(rbm::BernoulliRBM, h_i::Int, v::Vector{T}) where T <: Union{Int, Float64}
-    return _sigmoid(
-        rbm.b[h_i] + rbm.W[:, h_i]' * v,
-    )
+function _prob_h_given_v(
+    rbm::BernoulliRBM,
+    h_i::Int,
+    v::Vector{T},
+) where {T<:Union{Int,Float64}}
+    return _sigmoid(rbm.b[h_i] + rbm.W[:, h_i]' * v)
 end
 
 # Free energy: -ln(Σₕ exp(-E(v, h)))
@@ -74,7 +78,7 @@ gibbs_sample_hidden(rbm::BernoulliRBM, v::Vector{Int}) =
 gibbs_sample_visible(rbm::BernoulliRBM, h::Vector{Int}) =
     [rand() < _prob_v_given_h(rbm, v_i, h) ? 1 : 0 for v_i = 1:num_visible_nodes(rbm)]
 
-conditional_prob_h(rbm::BernoulliRBM, v::Vector{T}) where T <: Union{Int, Float64} =
+conditional_prob_h(rbm::BernoulliRBM, v::Vector{T}) where {T<:Union{Int,Float64}} =
     [_prob_h_given_v(rbm, h_i, v) for h_i = 1:num_hidden_nodes(rbm)]
-conditional_prob_v(rbm::BernoulliRBM, h::Vector{T}) where T <: Union{Int, Float64} =
+conditional_prob_v(rbm::BernoulliRBM, h::Vector{T}) where {T<:Union{Int,Float64}} =
     [_prob_v_given_h(rbm, v_i, h) for v_i = 1:num_visible_nodes(rbm)]
