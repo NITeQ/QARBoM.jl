@@ -24,3 +24,4 @@ docs/site/
 Manifest.toml
 
 example/.ipynb_checkpoints/*
+profile.pb.gz
