@@ -1,15 +1,14 @@
 module QARBoM
 
 using Printf
+using Statistics
 
 abstract type AbstractRBM end
-abstract type AbstractMethod end
-struct CD <: AbstractMethod end # Contrastive Divergence
-struct PCD <: AbstractMethod end # Persistent Contrastive Divergence
 
 include("utils.jl")
 include("bernoulli_rbm.jl")
-include("contrastive_divergence.jl")
+include("cd.jl")
+include("pcd.jl")
 include("training.jl")
 
 end # module QARBoM
