@@ -47,7 +47,7 @@ function persistent_contrastive_divergence(
         t_gibbs = time()
         # v_estimate, h_estimate = get_avg_fantasy_data(fantasy_data) # v~, h~
         total_t_gibbs += time() - t_gibbs
-        
+
         i = 1
         for sample in x[mini_batch]
 
@@ -60,9 +60,11 @@ function persistent_contrastive_divergence(
 
             # Update hyperparameter
             t_update = time()
-            rbm.W .+= (learning_rate/length(mini_batch)) .* (v_test * h_test' .- fantasy_data[i].v * fantasy_data[i].h')
-            rbm.a .+= (learning_rate/length(mini_batch)) .* (v_test .- fantasy_data[i].v)
-            rbm.b .+= (learning_rate/length(mini_batch)) .* (h_test .- fantasy_data[i].h)
+            rbm.W .+=
+                (learning_rate / length(mini_batch)) .*
+                (v_test * h_test' .- fantasy_data[i].v * fantasy_data[i].h')
+            rbm.a .+= (learning_rate / length(mini_batch)) .* (v_test .- fantasy_data[i].v)
+            rbm.b .+= (learning_rate / length(mini_batch)) .* (h_test .- fantasy_data[i].h)
             total_t_update += time() - t_update
 
             loss += abs.(v_test - fantasy_data[i].v)
