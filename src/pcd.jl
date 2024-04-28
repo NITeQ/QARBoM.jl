@@ -37,7 +37,7 @@ function persistent_contrastive_divergence(
     fantasy_data::Vector{FantasyData};
     learning_rate::Float64 = 0.1,
 )
-    loss = 0.0
+    loss = Vector{Float64}(undef, num_visible_nodes(rbm))
     total_t_sample = 0.0
     total_t_gibbs = 0.0
     total_t_update = 0.0
@@ -45,10 +45,10 @@ function persistent_contrastive_divergence(
 
         # update fantasy FantasyData
         t_gibbs = time()
-        vh_estimate = get_avg_fantasy_outer(fantasy_data) # <vh>
-        v_estimate, h_estimate = get_avg_fantasy_data(fantasy_data) # v~, h~
+        # v_estimate, h_estimate = get_avg_fantasy_data(fantasy_data) # v~, h~
         total_t_gibbs += time() - t_gibbs
-
+        
+        i = 1
         for sample in x[mini_batch]
 
             t_sample = time()
@@ -60,15 +60,13 @@ function persistent_contrastive_divergence(
 
             # Update hyperparameter
             t_update = time()
-            rbm.W .+= learning_rate .* (v_test * h_test' .- vh_estimate)
-            rbm.a .+= learning_rate .* (v_test .- v_estimate)
-            rbm.b .+= learning_rate .* (h_test .- h_estimate)
+            rbm.W .+= (learning_rate/length(mini_batch)) .* (v_test * h_test' .- fantasy_data[i].v * fantasy_data[i].h')
+            rbm.a .+= (learning_rate/length(mini_batch)) .* (v_test .- fantasy_data[i].v)
+            rbm.b .+= (learning_rate/length(mini_batch)) .* (h_test .- fantasy_data[i].h)
             total_t_update += time() - t_update
 
-            # Update loss
-            # println(free_energy(rbm, round.(Int,v_test)))
-            # println(free_energy(rbm, round.(Int,v_estimate)))
-            # loss += free_energy(rbm, round.(Int,v_test)) - free_energy(rbm, round.(Int,v_estimate))
+            loss += abs.(v_test - fantasy_data[i].v)
+            i += 1
         end
 
         # Update fantasy data
@@ -76,5 +74,5 @@ function persistent_contrastive_divergence(
         update_fantasy_data!(rbm, fantasy_data)
         total_t_gibbs += time() - t_gibbs
     end
-    return loss / length(x), total_t_sample, total_t_gibbs, total_t_update
+    return sum(loss) / length(x), total_t_sample, total_t_gibbs, total_t_update
 end
