@@ -60,6 +60,7 @@ function train_pcd(
     mini_batches = _set_mini_batches(length(x_train), batch_size)
     fantasy_data = init_fantasy_data(rbm, batch_size)
     println("Starting training")
+    avg_loss_vector = Vector{Float64}(undef, n_epochs)
 
     for epoch = 1:n_epochs
         avg_loss, t_sample, t_gibbs, t_update = persistent_contrastive_divergence(
@@ -69,6 +70,8 @@ function train_pcd(
             fantasy_data;
             learning_rate = learning_rate,
         )
+
+        avg_loss_vector[epoch] = avg_loss
 
         total_t_sample += t_sample
         total_t_gibbs += t_gibbs
@@ -103,4 +106,5 @@ function train_pcd(
     println("Total time spent in Gibbs sampling: $total_t_gibbs")
     println("Total time spent updating parameters: $total_t_update")
     println("Total time spent training: $(total_t_sample + total_t_gibbs + total_t_update)")
+    return avg_loss_vector
 end

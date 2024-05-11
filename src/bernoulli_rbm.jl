@@ -87,3 +87,9 @@ conditional_prob_h(rbm::BernoulliRBM, v::Vector{T}) where {T<:Union{Int,Float64}
     [_prob_h_given_v(rbm, h_i, v) for h_i = 1:num_hidden_nodes(rbm)]
 conditional_prob_v(rbm::BernoulliRBM, h::Vector{T}) where {T<:Union{Int,Float64}} =
     [_prob_v_given_h(rbm, v_i, h) for v_i = 1:num_visible_nodes(rbm)]
+
+function reconstruct(rbm::BernoulliRBM, v::Vector{Int})
+    h = conditional_prob_h(rbm, v)
+    v_reconstructed = conditional_prob_v(rbm, h)
+    return v_reconstructed
+end
