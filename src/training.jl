@@ -6,6 +6,7 @@ function train_cd(
     learning_rate::Float64,
 )
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
+    avg_loss_vector = Vector{Float64}(undef, n_epochs)
     for epoch = 1:n_epochs
         avg_loss, t_sample, t_gibbs, t_update = contrastive_divergence(
             rbm,
@@ -39,6 +40,8 @@ function train_cd(
         println(
             "|------------------------------------------------------------------------------|",
         )
+
+        avg_loss_vector[epoch] = avg_loss
     end
     println("Finished training after $n_epochs epochs.")
 
@@ -46,6 +49,7 @@ function train_cd(
     println("Total time spent in Gibbs sampling: $total_t_gibbs")
     println("Total time spent updating parameters: $total_t_update")
     println("Total time spent training: $(total_t_sample + total_t_gibbs + total_t_update)")
+    return avg_loss_vector
 end
 
 function train_pcd(
@@ -80,7 +84,7 @@ function train_pcd(
             "|------------------------------------------------------------------------------|",
         )
         println(
-            "| Epoch | Avg. Loss | Time (Sample) | Time (Gibbs) | Time (Update) | Total     |",
+            "| Epoch |    MSE    | Time (Sample) | Time (Gibbs) | Time (Update) | Total     |",
         )
         println(
             "|------------------------------------------------------------------------------|",

@@ -37,11 +37,9 @@ function persistent_contrastive_divergence(
     fantasy_data::Vector{FantasyData};
     learning_rate::Float64 = 0.1,
 )
-    loss_vector = Vector{Float64}(undef, length(mini_batches))
     total_t_sample = 0.0
     total_t_gibbs = 0.0
     total_t_update = 0.0
-    batch_idx = 1
     loss = 0.0
     for mini_batch in mini_batches
 
@@ -70,18 +68,15 @@ function persistent_contrastive_divergence(
             total_t_update += time() - t_update
 
             # loss by Mean Squared Error
-            reconstructed = reconstruct(rbm, x[mini_batch][1])
-            loss += sum((x[mini_batch][1] .- reconstructed).^2) / length(mini_batch)
+            reconstructed = reconstruct(rbm, sample)
+            loss += sum((sample .- reconstructed).^2)
             i += 1
         end
-
-        loss_vector[batch_idx] = loss
-        batch_idx += 1
 
         # Update fantasy data
         t_gibbs = time()
         update_fantasy_data!(rbm, fantasy_data)
         total_t_gibbs += time() - t_gibbs
     end
-    return mean(loss_vector), total_t_sample, total_t_gibbs, total_t_update
+    return loss / length(x), total_t_sample, total_t_gibbs, total_t_update
 end

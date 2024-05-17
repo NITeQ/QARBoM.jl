@@ -78,9 +78,9 @@ function free_energy(rbm::BernoulliRBM, v::Vector{Int})
 end
 
 # Gibbs sampling
-gibbs_sample_hidden(rbm::BernoulliRBM, v::Vector{Float64}) =
+gibbs_sample_hidden(rbm::BernoulliRBM, v::Vector{T}) where {T<:Union{Int,Float64}} =
     [rand() < _prob_h_given_v(rbm, h_i, v) ? 1 : 0 for h_i = 1:num_hidden_nodes(rbm)]
-gibbs_sample_visible(rbm::BernoulliRBM, h::Vector{Float64}) =
+gibbs_sample_visible(rbm::BernoulliRBM, h::Vector{T}) where {T<:Union{Int,Float64}} =
     [rand() < _prob_v_given_h(rbm, v_i, h) ? 1 : 0 for v_i = 1:num_visible_nodes(rbm)]
 
 conditional_prob_h(rbm::BernoulliRBM, v::Vector{T}) where {T<:Union{Int,Float64}} =
