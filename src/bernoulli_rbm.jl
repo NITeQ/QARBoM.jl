@@ -15,7 +15,7 @@ end
 
 # Energy function: -aᵀv - bᵀh - vᵀWh
 function energy(rbm::BernoulliRBM, v::Vector{Int}, h::Vector{Int})
-    return -dot(rbm.a, v) - dot(rbm.b, h) - dot(v, rbm.W * h)
+    return -rbm.a' * v - rbm.b' * h - v' * rbm.W * h
 end
 
 # Partition function: Σₕ Σᵥ exp(-E(v, h))
@@ -68,17 +68,28 @@ function _prob_h_given_v(
 end
 
 # Free energy: -ln(Σₕ exp(-E(v, h)))
-function free_energy(rbm::BernoulliRBM)
-    return -log(partition_function(rbm))
+function free_energy(rbm::BernoulliRBM, v::Vector{Int})
+    return -log(
+        sum(
+            exp(-energy(rbm, v, h)) for h in _get_permutations(num_hidden_nodes(rbm));
+            init = 0.0,
+        ),
+    ) - rbm.a' * v
 end
 
 # Gibbs sampling
-gibbs_sample_hidden(rbm::BernoulliRBM, v::Vector{Int}) =
+gibbs_sample_hidden(rbm::BernoulliRBM, v::Vector{T}) where {T<:Union{Int,Float64}} =
     [rand() < _prob_h_given_v(rbm, h_i, v) ? 1 : 0 for h_i = 1:num_hidden_nodes(rbm)]
-gibbs_sample_visible(rbm::BernoulliRBM, h::Vector{Int}) =
+gibbs_sample_visible(rbm::BernoulliRBM, h::Vector{T}) where {T<:Union{Int,Float64}} =
     [rand() < _prob_v_given_h(rbm, v_i, h) ? 1 : 0 for v_i = 1:num_visible_nodes(rbm)]
 
 conditional_prob_h(rbm::BernoulliRBM, v::Vector{T}) where {T<:Union{Int,Float64}} =
     [_prob_h_given_v(rbm, h_i, v) for h_i = 1:num_hidden_nodes(rbm)]
 conditional_prob_v(rbm::BernoulliRBM, h::Vector{T}) where {T<:Union{Int,Float64}} =
     [_prob_v_given_h(rbm, v_i, h) for v_i = 1:num_visible_nodes(rbm)]
+
+function reconstruct(rbm::BernoulliRBM, v::Vector{Int})
+    h = conditional_prob_h(rbm, v)
+    v_reconstructed = conditional_prob_v(rbm, h)
+    return v_reconstructed
+end

@@ -8,3 +8,16 @@ end
 
 num_visible_nodes(rbm::AbstractRBM) = rbm.n_visible
 num_hidden_nodes(rbm::AbstractRBM) = rbm.n_hidden
+
+function _set_mini_batches(training_set_length::Int, batch_size::Int)
+    n_batches = round(Int, training_set_length / batch_size)
+    last_batch_size = training_set_length % batch_size
+    if last_batch_size > 0
+        @warn "The last batch size is not equal to the batch size. Will dismiss $(last_batch_size) samples."
+    end
+    mini_batches = Vector{UnitRange{Int64}}(undef, n_batches)
+    for i = 1:n_batches
+        mini_batches[i] = (i-1)*batch_size+1:i*batch_size
+    end
+    return mini_batches
+end
