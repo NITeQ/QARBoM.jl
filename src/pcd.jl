@@ -69,7 +69,7 @@ function persistent_contrastive_divergence(
 
             # loss by Mean Squared Error
             reconstructed = reconstruct(rbm, sample)
-            loss += sum((sample .- reconstructed).^2)
+            loss += sum((sample .- reconstructed) .^ 2)
             i += 1
         end
 

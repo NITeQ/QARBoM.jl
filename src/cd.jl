@@ -38,7 +38,7 @@ function contrastive_divergence(
 
         # Update loss
         reconstructed = reconstruct(rbm, sample)
-        loss += sum((sample .- reconstructed).^2)
+        loss += sum((sample .- reconstructed) .^ 2)
     end
     return loss / length(x), total_t_sample, total_t_gibbs, total_t_update
 end
