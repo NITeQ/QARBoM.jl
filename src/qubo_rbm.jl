@@ -23,7 +23,7 @@ function _hyper_parameters(rbm::QUBORBM)
         n, L, Q, a, b = QUBOTools.qubo(QUBOTools.Model(JuMP.backend(rbm.model)), :dense)
         return Q[1:num_visible_nodes(rbm), num_visible_nodes(rbm)+1:end], L
     end
-    n, L, Q, α, β = QUBOTools.qubo(rbm.model, :dense)
+    n, L, Q, α, β = QUBOTools.qubo(unsafe_backend(rbm.model), :dense)
     return Q[1:num_visible_nodes(rbm), num_visible_nodes(rbm)+1:end], L
 end
 
@@ -63,3 +63,4 @@ function qubo_sample(rbm::QUBORBM, n_samples::Int)
     end
     return v_sampled./result_count(model), h_sampled./result_count(model)
 end
+
