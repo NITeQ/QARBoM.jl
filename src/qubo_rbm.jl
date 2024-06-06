@@ -1,29 +1,22 @@
-@enum RBMStatus UNTRAINED TRAINED 
-
 mutable struct QUBORBM <: AbstractRBM
     model
     n_visible::Int # number of visible units
     n_hidden::Int # number of hidden units
-    status::RBMStatus
 end
 
 function QUBORBM(n_visible::Int, n_hidden::Int, sampler)
-    Q = _rbm_qubo(n_visible, n_hidden)
+    W = randn(n_hidden, n_visible)
 
     model = Model(sampler)
     @variable(model, vis[1:n_visible], Bin)
     @variable(model, hid[1:n_hidden], Bin)
-    @objective(model, Min, vcat(vis, hid)' * Q * vcat(vis, hid))
+    @objective(model, Min, hid' * W * vis)
 
-    return QUBORBM(model, n_visible, n_hidden, UNTRAINED)
+    return QUBORBM(model, n_visible, n_hidden)
 end
 
 function _hyper_parameters(rbm::QUBORBM)
-    if rbm.status == UNTRAINED
-        n, L, Q, a, b = QUBOTools.qubo(QUBOTools.Model(JuMP.backend(rbm.model)), :dense)
-        return Q[1:num_visible_nodes(rbm), num_visible_nodes(rbm)+1:end], L
-    end
-    n, L, Q, α, β = QUBOTools.qubo(unsafe_backend(rbm.model), :dense)
+    n, L, Q, a, b = QUBOTools.qubo(QUBOTools.Model(JuMP.backend(rbm.model)), :dense)
     return Q[1:num_visible_nodes(rbm), num_visible_nodes(rbm)+1:end], L
 end
 
@@ -55,7 +48,6 @@ end
 
 function qubo_sample(rbm::QUBORBM, n_samples::Int)
     optimize!(rbm.model)
-    rbm.status = TRAINED
     v_sampled = zeros(Int, num_visible_nodes(rbm))
     h_sampled = zeros(Int, num_hidden_nodes(rbm))
     total_samples = result_count(rbm.model)
@@ -130,6 +122,9 @@ function persistent_qubo_sampling(
             # @show sample
             # @show reconstructed
             loss += sum((sample .- reconstructed) .^ 2)
+
+            # @show _hyper_parameters(rbm)[1]
+
         end
         # @show _hyper_parameters(rbm)
     end

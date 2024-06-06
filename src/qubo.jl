@@ -7,28 +7,26 @@ function update_qubo!(
     learning_rate::Float64
     )
 
-    n, L, Q, α, β = if rbm.status == UNTRAINED
-        QUBOTools.qubo(QUBOTools.Model(JuMP.backend(rbm.model)), :dense)
-    else
-        QUBOTools.qubo(unsafe_backend(rbm.model), :dense)
-    end
-
+    n, L, Q, α, β =  QUBOTools.qubo(QUBOTools.Model(JuMP.backend(rbm.model)), :dense)
+ 
     W_update = learning_rate .* (v_data*h_data' - v_model*h_model')
     L_update_vis = learning_rate .* (v_data - v_model)
     L_update_hid = learning_rate .* (h_data - h_model)
 
     # make W upper triangular
-    for i in 1:num_visible_nodes(rbm), j in 1:num_hidden_nodes(rbm)
-        j_mapped = j + num_visible_nodes(rbm)
-        Q[i, j_mapped] += W_update[i, j]
-    end
-    for i in 1:num_visible_nodes(rbm)
-        L[i] += L_update_vis[i]
-    end
-    for j in 1:num_hidden_nodes(rbm)
-        j_mapped = j + num_visible_nodes(rbm)
-        L[j_mapped] += L_update_hid[j]
-    end
+    # for i in 1:num_visible_nodes(rbm), j in 1:num_hidden_nodes(rbm)
+    #     j_mapped = j + num_visible_nodes(rbm)
+    #     Q[i, j_mapped] += W_update[i, j]
+    # end
+    Q[1:num_visible_nodes(rbm), num_visible_nodes(rbm)+1:end] .+= W_update
+    L .+= vcat(L_update_vis, L_update_hid)
+    # for i in 1:num_visible_nodes(rbm)
+    #     L[i] += L_update_vis[i]
+    # end
+    # for j in 1:num_hidden_nodes(rbm)
+    #     j_mapped = j + num_visible_nodes(rbm)
+    #     L[j_mapped] += L_update_hid[j]
+    # end
 
     quadratic_coefficients = Vector{Float64}()
     quadratic_terms_1 = Vector{JuMP.VariableRef}()
@@ -60,7 +58,6 @@ function update_qubo!(
 
     
     JuMP.set_objective_coefficient(rbm.model, linear_terms, linear_coefficients)
-    rbm.status = UNTRAINED
 
     return
 end
