@@ -4,13 +4,15 @@ using QUBO
 using DWave
 
 Q = [
-    0  2  2
-    2  0  2
-    2  2  0
+    0  0  2  2
+    0  0  2  2
+    2  2  0  0
+    2  2  0  0
 ]
 
 model = Model(DWave.Neal.Optimizer)
-@variable(model, x[1:3], Bin)
+@variable(model, x[1:2], Bin)
+@variable(model, y[1:2], Bin)
 
 @objective(model, Min, x' * Q * x)
 
@@ -21,15 +23,16 @@ n, L, Q_opt, a, b = QUBOTools.qubo(unsafe_backend(model), :dense)
 @assert (Q_opt+Q_opt')/2 == Q - Diagonal(L)
 
 new_Q = [
-    0  1  1
-    1  0  1
-    1  1  0
+    0  0  1  1
+    0  0  1  1
+    1  1  0  0 
+    1  1  0  0
 ]
 
 coefficients = Vector{Float64}()
 variables_1 = Vector{JuMP.VariableRef}()    
 variables_2 = Vector{JuMP.VariableRef}()
-for i in 1:3, j in i+1:3
+for i in 1:2, j in 1:2
     push!(variables_1, model[:x][i])
     push!(variables_2, model[:x][j])
     push!(coefficients, 2*new_Q[i, j])

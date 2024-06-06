@@ -26,3 +26,4 @@ Manifest.toml
 example/.ipynb_checkpoints/*
 profile.pb.gz
 example/.CondaPkg/*
+.DS_Store

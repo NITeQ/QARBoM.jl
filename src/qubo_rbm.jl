@@ -15,7 +15,7 @@ function QUBORBM(n_visible::Int, n_hidden::Int, sampler)
     @variable(model, hid[1:n_hidden], Bin)
     @objective(model, Min, vcat(vis, hid)' * Q * vcat(vis, hid))
 
-    return QUBORBM(model, n_visible, n_hidden)
+    return QUBORBM(model, n_visible, n_hidden, UNTRAINED)
 end
 
 function _hyper_parameters(rbm::QUBORBM)
@@ -55,12 +55,85 @@ end
 
 function qubo_sample(rbm::QUBORBM, n_samples::Int)
     optimize!(rbm.model)
+    rbm.status = TRAINED
     v_sampled = zeros(Int, num_visible_nodes(rbm))
     h_sampled = zeros(Int, num_hidden_nodes(rbm))
-    for i in 1:result_count(model)
-        v_sampled .+= value.(model[:vis], result = i)
-        h_sampled .+= value.(model[:hid], result = i)
+    total_samples = result_count(rbm.model)
+    for i in 1:total_samples
+        v_sampled .+= value.(rbm.model[:vis], result = i)
+        h_sampled .+= value.(rbm.model[:hid], result = i)
     end
-    return v_sampled./result_count(model), h_sampled./result_count(model)
+    return v_sampled./total_samples, h_sampled./total_samples
 end
+
+function quantum_sampling(
+    rbm::QUBORBM,
+    x::Vector{Vector{Int}},
+    n_samples::Int;
+    learning_rate::Float64 = 0.1,
+)
+    total_t_sample = 0.0
+    total_t_qs = 0.0
+    total_t_update = 0.0
+    loss = 0.0
+    for sample in x
+
+        t_sample = time()
+        v_test = sample # training visible
+        h_test = conditional_prob_h(rbm, v_test) # hidden from training visible
+        total_t_sample += time() - t_sample
+
+        t_qs = time()
+        v_estimate, h_estimate = qubo_sample(rbm, n_samples) # v~, h~
+        total_t_qs += time() - t_qs
+
+        t_update = time()
+        update_qubo!(rbm, v_test, h_test, v_estimate, h_estimate, learning_rate)
+        total_t_update += time() - t_update
+
+        # loss by Mean Squared Error
+        reconstructed = reconstruct(rbm, sample)
+        loss += sum((sample .- reconstructed) .^ 2)
+
+    end
+    return loss / length(x), total_t_sample, total_t_qs, total_t_update
+end
+
+function persistent_qubo_sampling(
+    rbm::QUBORBM,
+    x::Vector{Vector{Int}},
+    mini_batches::Vector{UnitRange{Int}},
+    n_samples::Int;
+    learning_rate::Float64 = 0.1,
+)
+    total_t_sample = 0.0
+    total_t_qs = 0.0
+    total_t_update = 0.0
+    loss = 0.0
+    for mini_batch in mini_batches
+        t_qs = time()
+        v_estimate, h_estimate = qubo_sample(rbm, n_samples) # v~, h~
+        total_t_qs += time() - t_qs
+        for sample in x[mini_batch]
+            t_sample = time()
+            v_test = sample # training visible
+            h_test = conditional_prob_h(rbm, v_test) # hidden from training visible
+            total_t_sample += time() - t_sample
+
+            # Update hyperparameter
+            t_update = time()
+            update_qubo!(rbm, v_test, h_test, v_estimate, h_estimate, (learning_rate / length(mini_batch)))
+            total_t_update += time() - t_update
+
+            # loss by Mean Squared Error
+            reconstructed = reconstruct(rbm, sample)
+            # @show sample
+            # @show reconstructed
+            loss += sum((sample .- reconstructed) .^ 2)
+        end
+        # @show _hyper_parameters(rbm)
+    end
+    return loss / length(x), total_t_sample, total_t_qs, total_t_update
+end
+
 
