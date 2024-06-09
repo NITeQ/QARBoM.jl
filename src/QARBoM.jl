@@ -14,7 +14,7 @@ include("bernoulli_rbm.jl")
 include("qubo_rbm.jl")
 include("cd.jl")
 include("pcd.jl")
-include("qubo.jl")
+include("qubo_update.jl")
 include("training.jl")
 
 end # module QARBoM

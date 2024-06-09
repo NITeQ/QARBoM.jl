@@ -5,14 +5,32 @@ mutable struct QUBORBM <: AbstractRBM
 end
 
 function QUBORBM(n_visible::Int, n_hidden::Int, sampler)
-    W = randn(n_hidden, n_visible)
+    W = randn(n_visible, n_hidden)
 
     model = Model(sampler)
     @variable(model, vis[1:n_visible], Bin)
     @variable(model, hid[1:n_hidden], Bin)
-    @objective(model, Min, hid' * W * vis)
+    @objective(model, Min, vis' * W * hid)
 
     return QUBORBM(model, n_visible, n_hidden)
+end
+
+function QUBORBM(n_visible::Int, n_hidden::Int, W::Matrix{Float64}, sampler)
+
+    model = Model(sampler)
+    @variable(model, vis[1:n_visible], Bin)
+    @variable(model, hid[1:n_hidden], Bin)
+    @objective(model, Min, - vis' * W * hid)
+
+    return QUBORBM(model, n_visible, n_hidden)
+end
+
+function _create_model(n_visible::Int, n_hidden::Int, W::Matrix{Float64}, L::Vector{Float64}, sampler)
+    model = Model(sampler)
+    @variable(model, vis[1:n_visible], Bin)
+    @variable(model, hid[1:n_hidden], Bin)
+    @objective(model, Min, - vis' * W * hid)
+    return model
 end
 
 function _hyper_parameters(rbm::QUBORBM)
@@ -102,6 +120,8 @@ function persistent_qubo_sampling(
     total_t_qs = 0.0
     total_t_update = 0.0
     loss = 0.0
+    W, L = _hyper_parameters(rbm)
+    a, b = L[1:num_visible_nodes(rbm)], L[num_visible_nodes(rbm)+1:end]
     for mini_batch in mini_batches
         t_qs = time()
         v_estimate, h_estimate = qubo_sample(rbm, n_samples) # v~, h~
@@ -114,21 +134,20 @@ function persistent_qubo_sampling(
 
             # Update hyperparameter
             t_update = time()
-            update_qubo!(rbm, v_test, h_test, v_estimate, h_estimate, (learning_rate / length(mini_batch)))
+            W .+= (learning_rate / length(mini_batch)) .* (v_test * h_test' .- v_estimate * h_estimate')
+            a .+= (learning_rate / length(mini_batch)) .* (v_test .- v_estimate)
+            b .+= (learning_rate / length(mini_batch)) .* (h_test .- h_estimate)
             total_t_update += time() - t_update
 
             # loss by Mean Squared Error
             reconstructed = reconstruct(rbm, sample)
-            # @show sample
-            # @show reconstructed
             loss += sum((sample .- reconstructed) .^ 2)
 
-            # @show _hyper_parameters(rbm)[1]
-
         end
-        # @show _hyper_parameters(rbm)
+        t_update = time()
+        update_qubo!(rbm, W, a, b)
+        total_t_update += time() - t_update
     end
     return loss / length(x), total_t_sample, total_t_qs, total_t_update
 end
-
 
