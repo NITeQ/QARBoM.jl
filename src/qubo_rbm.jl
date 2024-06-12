@@ -2,6 +2,7 @@ mutable struct QUBORBM <: AbstractRBM
     model
     n_visible::Int # number of visible units
     n_hidden::Int # number of hidden units
+    # momentum::Float64 # momentum for learning
 end
 
 function QUBORBM(n_visible::Int, n_hidden::Int, sampler)
@@ -35,7 +36,7 @@ end
 
 function _hyper_parameters(rbm::QUBORBM)
     n, L, Q, a, b = QUBOTools.qubo(QUBOTools.Model(JuMP.backend(rbm.model)), :dense)
-    return Q[1:num_visible_nodes(rbm), num_visible_nodes(rbm)+1:end], L
+    return -Q[1:num_visible_nodes(rbm), num_visible_nodes(rbm)+1:end], -L
 end
 
 function energy(rbm::QUBORBM, v::Vector{Int}, h::Vector{Int})
@@ -43,16 +44,12 @@ function energy(rbm::QUBORBM, v::Vector{Int}, h::Vector{Int})
     return -L[1:num_visible_nodes(rbm)]' * v - L[num_visible_nodes(rbm)+1:end]' * h - v' * W * h
 end
 
-function conditional_prob_h(rbm::QUBORBM, v::Vector{T}) where {T<:Union{Int,Float64}} 
-    W, L = _hyper_parameters(rbm)
-    b = L[num_visible_nodes(rbm)+1:end]
-    return [_sigmoid(b[j] + W[:, j]' * v) for j = 1:num_hidden_nodes(rbm)]
+function conditional_prob_h(W::Matrix{Float64}, b::Vector{Float64}, v::Vector{T}) where {T<:Union{Int,Float64}} 
+    return [_sigmoid(b[j] + W[:, j]' * v) for j = 1:length(b)]
 end
 
-function conditional_prob_v(rbm::QUBORBM, h::Vector{T}) where {T<:Union{Int,Float64}}
-    W, L = _hyper_parameters(rbm)
-    a = L[1:num_visible_nodes(rbm)]
-    return [_sigmoid(a[i] + W[i, :]' * h) for i = 1:num_visible_nodes(rbm)]
+function conditional_prob_v(W::Matrix{Float64}, a::Vector{Float64}, h::Vector{T}) where {T<:Union{Int,Float64}}
+    return [_sigmoid(a[i] + W[i, :]' * h) for i = 1:length(a)]
 end
 
 function reconstruct(rbm::QUBORBM, v::Vector{Int})
@@ -63,6 +60,13 @@ function reconstruct(rbm::QUBORBM, v::Vector{Int})
     v_reconstructed = [_sigmoid(a[i] + W[i, :]' * h) for i = 1:num_visible_nodes(rbm)]
     return v_reconstructed
 end
+
+function reconstruct(W::Matrix{Float64}, a::Vector{Float64}, b::Vector{Float64}, v::Vector{Int})
+    h = conditional_prob_h(W, b, v)
+    v_reconstructed = conditional_prob_v(W, a, h)
+    return v_reconstructed
+end
+
 
 function qubo_sample(rbm::QUBORBM, n_samples::Int)
     optimize!(rbm.model)
@@ -129,7 +133,7 @@ function persistent_qubo_sampling(
         for sample in x[mini_batch]
             t_sample = time()
             v_test = sample # training visible
-            h_test = conditional_prob_h(rbm, v_test) # hidden from training visible
+            h_test = conditional_prob_h(W, b, v_test) # hidden from training visible
             total_t_sample += time() - t_sample
 
             # Update hyperparameter
@@ -140,9 +144,8 @@ function persistent_qubo_sampling(
             total_t_update += time() - t_update
 
             # loss by Mean Squared Error
-            reconstructed = reconstruct(rbm, sample)
+            reconstructed = reconstruct(W, a, b, sample)
             loss += sum((sample .- reconstructed) .^ 2)
-
         end
         t_update = time()
         update_qubo!(rbm, W, a, b)
