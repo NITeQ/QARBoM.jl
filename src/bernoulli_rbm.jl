@@ -18,37 +18,6 @@ function energy(rbm::BernoulliRBM, v::Vector{Int}, h::Vector{Int})
     return -rbm.a' * v - rbm.b' * h - v' * rbm.W * h
 end
 
-# Partition function: Σₕ Σᵥ exp(-E(v, h))
-function _partition_function(rbm::BernoulliRBM)
-    Z = 0.0
-    for v in _get_permutations(num_visible_nodes(rbm))
-        for h in _get_permutations(num_hidden_nodes(rbm))
-            Z += exp(-energy(rbm, v, h))
-        end
-    end
-    return Z
-end
-
-# P(v, h) = exp(-E(v, h)) / Z
-function _prob(rbm::BernoulliRBM, v::Vector{Int}, h::Vector{Int})
-    Z = partition_function(rbm)
-    return exp(-energy(rbm, v, h)) / Z
-end
-
-# P(v) = Σₕ P(v, h)
-function _prob_v(rbm::BernoulliRBM, v::Vector{Int})
-    Z = partition_function(rbm)
-    return sum(exp(-energy(rbm, v, h)) for h in _get_permutations(num_hidden_nodes(rbm))) /
-           Z
-end
-
-# P(h) = Σᵥ P(v, h)
-function _prob_h(rbm::BernoulliRBM, h::Vector{Int})
-    Z = partition_function(rbm)
-    return sum(exp(-energy(rbm, v, h)) for v in _get_permutations(num_visible_nodes(rbm))) /
-           Z
-end
-
 # P(vᵢ = 1 | h) = sigmoid(aᵢ + Σⱼ Wᵢⱼ hⱼ)
 function _prob_v_given_h(
     rbm::BernoulliRBM,
@@ -85,16 +54,6 @@ function _prob_h_given_v(
     v::Vector{T},
 ) where {T<:Union{Int,Float64}}
     return _sigmoid((rbm.b[h_i] + b_fast[h_i]) + (rbm.W[:, h_i] + W_fast[:, h_i])' * v)
-end
-
-# Free energy: -ln(Σₕ exp(-E(v, h)))
-function free_energy(rbm::BernoulliRBM, v::Vector{Int})
-    return -log(
-        sum(
-            exp(-energy(rbm, v, h)) for h in _get_permutations(num_hidden_nodes(rbm));
-            init = 0.0,
-        ),
-    ) - rbm.a' * v
 end
 
 # Gibbs sampling

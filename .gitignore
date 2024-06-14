@@ -29,3 +29,5 @@ example/.ipynb_checkpoints/*
 profile.pb.gz
 example/.CondaPkg/*
 .DS_Store
+.ipynb_checkpoints
+.CondaPkg

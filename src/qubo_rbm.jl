@@ -26,14 +26,6 @@ function QUBORBM(n_visible::Int, n_hidden::Int, W::Matrix{Float64}, sampler)
     return QUBORBM(model, n_visible, n_hidden)
 end
 
-function _create_model(n_visible::Int, n_hidden::Int, W::Matrix{Float64}, L::Vector{Float64}, sampler)
-    model = Model(sampler)
-    @variable(model, vis[1:n_visible], Bin)
-    @variable(model, hid[1:n_hidden], Bin)
-    @objective(model, Min, - vis' * W * hid)
-    return model
-end
-
 function _hyper_parameters(rbm::QUBORBM)
     n, L, Q, a, b = QUBOTools.qubo(QUBOTools.Model(JuMP.backend(rbm.model)), :dense)
     return -Q[1:num_visible_nodes(rbm), num_visible_nodes(rbm)+1:end], -L
@@ -90,11 +82,13 @@ function quantum_sampling(
     total_t_qs = 0.0
     total_t_update = 0.0
     loss = 0.0
+    W, L = _hyper_parameters(rbm)
+    a, b = L[1:num_visible_nodes(rbm)], L[num_visible_nodes(rbm)+1:end]
     for sample in x
 
         t_sample = time()
         v_test = sample # training visible
-        h_test = conditional_prob_h(rbm, v_test) # hidden from training visible
+        h_test = conditional_prob_h(W, b, v_test) # hidden from training visible
         total_t_sample += time() - t_sample
 
         t_qs = time()
@@ -102,11 +96,14 @@ function quantum_sampling(
         total_t_qs += time() - t_qs
 
         t_update = time()
-        update_qubo!(rbm, v_test, h_test, v_estimate, h_estimate, learning_rate)
+        W .+= (learning_rate / length(mini_batch)) .* (v_test * h_test' .- v_estimate * h_estimate')
+        a .+= (learning_rate / length(mini_batch)) .* (v_test .- v_estimate)
+        b .+= (learning_rate / length(mini_batch)) .* (h_test .- h_estimate)
+        update_qubo!(rbm, W, a, b)
         total_t_update += time() - t_update
 
         # loss by Mean Squared Error
-        reconstructed = reconstruct(rbm, sample)
+        reconstructed = reconstruct(W, a, b, sample)
         loss += sum((sample .- reconstructed) .^ 2)
 
     end
