@@ -2,18 +2,18 @@ mutable struct QUBORBM <: AbstractRBM
     model
     n_visible::Int # number of visible units
     n_hidden::Int # number of hidden units
-    # momentum::Float64 # momentum for learning
+    α::Float64 # momentum for learning
 end
 
 function QUBORBM(n_visible::Int, n_hidden::Int, sampler)
-    W = randn(n_visible, n_hidden)
+    W = rand(n_visible, n_hidden)
 
     model = Model(sampler)
     @variable(model, vis[1:n_visible], Bin)
     @variable(model, hid[1:n_hidden], Bin)
     @objective(model, Min, vis' * W * hid)
 
-    return QUBORBM(model, n_visible, n_hidden)
+    return QUBORBM(model, n_visible, n_hidden, 1.0)
 end
 
 function QUBORBM(n_visible::Int, n_hidden::Int, W::Matrix{Float64}, sampler)
@@ -23,9 +23,11 @@ function QUBORBM(n_visible::Int, n_hidden::Int, W::Matrix{Float64}, sampler)
     @variable(model, hid[1:n_hidden], Bin)
     @objective(model, Min, - vis' * W * hid)
 
-    return QUBORBM(model, n_visible, n_hidden)
+    return QUBORBM(model, n_visible, n_hidden, 1.0)
 end
 
+set_momentum!(rbm::QUBORBM, α::Float64) = rbm.momentum = momentum
+    
 function _hyper_parameters(rbm::QUBORBM)
     n, L, Q, a, b = QUBOTools.qubo(QUBOTools.Model(JuMP.backend(rbm.model)), :dense)
     return -Q[1:num_visible_nodes(rbm), num_visible_nodes(rbm)+1:end], -L
@@ -96,9 +98,9 @@ function quantum_sampling(
         total_t_qs += time() - t_qs
 
         t_update = time()
-        W .+= (learning_rate / length(mini_batch)) .* (v_test * h_test' .- v_estimate * h_estimate')
-        a .+= (learning_rate / length(mini_batch)) .* (v_test .- v_estimate)
-        b .+= (learning_rate / length(mini_batch)) .* (h_test .- h_estimate)
+        W .= rbm.α .* W .+ (learning_rate / length(mini_batch)) .* (v_test * h_test' .- v_estimate * h_estimate')
+        a .= rbm.α .* a .+ (learning_rate / length(mini_batch)) .* (v_test .- v_estimate)
+        b .= rbm.α .* b .+ (learning_rate / length(mini_batch)) .* (h_test .- h_estimate)
         update_qubo!(rbm, W, a, b)
         total_t_update += time() - t_update
 
