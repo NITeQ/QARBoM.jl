@@ -26,7 +26,7 @@ function QUBORBM(n_visible::Int, n_hidden::Int, W::Matrix{Float64}, sampler)
     return QUBORBM(model, n_visible, n_hidden, 1.0)
 end
 
-set_momentum!(rbm::QUBORBM, α::Float64) = rbm.momentum = momentum
+set_momentum!(rbm::QUBORBM, α::Float64) = rbm.α = α
     
 function _hyper_parameters(rbm::QUBORBM)
     n, L, Q, a, b = QUBOTools.qubo(QUBOTools.Model(JuMP.backend(rbm.model)), :dense)
