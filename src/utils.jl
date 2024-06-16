@@ -21,3 +21,10 @@ function _set_mini_batches(training_set_length::Int, batch_size::Int)
     end
     return mini_batches
 end
+
+# function _rbm_qubo(num_visible::Int, num_hidden::Int)
+#     Q = zeros(num_visible + num_hidden, num_visible + num_hidden)
+#     Q[1:num_visible, num_visible+1:num_visible+num_hidden] = randn(num_visible, num_hidden)
+#     Q[num_visible+1:num_visible+num_hidden, 1:num_visible] = Q[1:num_visible, num_visible+1:num_visible+num_hidden]'
+#     return Q
+# end
