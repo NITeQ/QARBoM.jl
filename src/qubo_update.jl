@@ -9,10 +9,16 @@ function update_qubo!(
 	quadratic_terms_1 = Vector{JuMP.VariableRef}()
 	quadratic_terms_2 = Vector{JuMP.VariableRef}()
 
-	for i in 1:num_visible_nodes(rbm), j in 1:num_hidden_nodes(rbm)
-		push!(quadratic_terms_1, rbm.model[:vis][i])
-		push!(quadratic_terms_2, rbm.model[:hid][j])
-		push!(quadratic_coefficients, - W[i,j])
+	for i in 1:num_visible_nodes(rbm)
+		for j in 1:num_hidden_nodes(rbm)
+			push!(quadratic_terms_1, rbm.model[:vis][i])
+			push!(quadratic_terms_2, rbm.model[:hid][j])
+			push!(quadratic_coefficients, - W[i,j])
+		end
+		# JuMP.set_objective_coefficient(rbm.model, quadratic_terms_1, quadratic_terms_2, quadratic_coefficients)
+		# empty!(quadratic_coefficients)
+		# empty!(quadratic_terms_1)
+		# empty!(quadratic_terms_2)
 	end
 
 	JuMP.set_objective_coefficient(rbm.model, quadratic_terms_1, quadratic_terms_2, quadratic_coefficients)
