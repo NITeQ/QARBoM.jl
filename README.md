@@ -1,3 +1,3 @@
-# QaRBoM
+# QARBoM
 
-Quantum-assisted Restricted Boltzmann Machine
+Quantum-Assisted Restricted Boltzmann Machine Training Framework

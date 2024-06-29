@@ -11,7 +11,7 @@ function QUBORBM(n_visible::Int, n_hidden::Int, sampler)
     model = Model(sampler)
     @variable(model, vis[1:n_visible], Bin)
     @variable(model, hid[1:n_hidden], Bin)
-    @objective(model, Min, vis' * W * hid)
+    @objective(model, Min, -  vis' * W * hid)
 
     return QUBORBM(model, n_visible, n_hidden, 1.0)
 end
@@ -147,7 +147,7 @@ function persistent_qubo_sampling(
             loss += sum((sample .- reconstructed) .^ 2)
         end
         t_update = time()
-        update_qubo!(rbm, W, a, b)
+        @objective(rbm.model, Min, - rbm.model[:vis]' * W * rbm.model[:hid] - a'rbm.model[:vis] - b'rbm.model[:hid])
         total_t_update += time() - t_update
     end
     return loss / length(x), total_t_sample, total_t_qs, total_t_update
