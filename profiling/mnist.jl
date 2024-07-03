@@ -6,7 +6,7 @@ using QARBoM
 # Initialize RBM
 visible_units = 784
 hidden_units = 500
-rbm = QARBoM.BernoulliRBM(visible_units, hidden_units)
+rbm = QARBoM.RBM(visible_units, hidden_units)
 
 # Load MNIST dataset
 trainset = MNIST(:train)
