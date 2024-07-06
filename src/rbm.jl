@@ -16,7 +16,7 @@ end
 function RBM(n_visible::Int, n_hidden::Int, W::Matrix{Float64})
     a = zeros(n_visible)
     b = zeros(n_hidden)
-    return RBM(W, a, b, n_visible, n_hidden)
+    return RBM(copy(W), a, b, n_visible, n_hidden)
 end
 
 function update_rbm!(
