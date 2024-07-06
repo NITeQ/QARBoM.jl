@@ -7,14 +7,14 @@ using QUBO
 
 abstract type AbstractRBM end
 
-export BernoulliRBM, QUBORBM
+export RBM
 
 include("utils.jl")
-include("bernoulli_rbm.jl")
-include("qubo_rbm.jl")
+include("rbm.jl")
+include("gibbs.jl")
+include("qubo.jl")
 include("cd.jl")
 include("pcd.jl")
-include("qubo_update.jl")
 include("training.jl")
 
 end # module QARBoM

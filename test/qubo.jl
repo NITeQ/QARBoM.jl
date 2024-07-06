@@ -5,7 +5,7 @@ function test_qubo()
     visible_units = 100
     hidden_units = 20
     
-    rbm = QARBoM.QUBORBM(visible_units, hidden_units, DWave.Neal.Optimizer)
+    rbm = QARBoM.RBM(visible_units, hidden_units, DWave.Neal.Optimizer)
 
     # Load MNIST dataset
     x_train = [
