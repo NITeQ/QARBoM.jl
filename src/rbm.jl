@@ -21,12 +21,12 @@ end
 
 function update_rbm!(
     rbm::RBM,
-    v_data::Vector{Int},
+    v_data::T,  
     h_data::Vector{Float64},
     v_model::Vector{Float64},
     h_model::Vector{Float64},
     learning_rate::Float64,
-)
+) where {T <: Union{Vector{Int}, Vector{Float64}}}
     rbm.W .+= learning_rate .* (v_data * h_data' .- v_model * h_model')
     rbm.a .+= learning_rate .* (v_data .- v_model)
     return rbm.b .+= learning_rate .* (h_data .- h_model)
@@ -67,7 +67,7 @@ conditional_prob_h(rbm::RBM, v::Vector{T}) where {T <: Union{Int, Float64}} =
 conditional_prob_v(rbm::RBM, h::Vector{T}) where {T <: Union{Int, Float64}} =
     [_prob_v_given_h(rbm, v_i, h) for v_i in 1:num_visible_nodes(rbm)]
 
-function reconstruct(rbm::RBM, v::Vector{Int})
+function reconstruct(rbm::RBM, v::Vector{T}) where {T <: Union{Int, Float64}}
     h = conditional_prob_h(rbm, v)
     v_reconstructed = conditional_prob_v(rbm, h)
     return v_reconstructed
