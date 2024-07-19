@@ -7,7 +7,16 @@ function _create_qubo_model(rbm::RBM, sampler, model_setup)
     return model
 end
 
-function _update_qubo_model!(model, rbm::RBM)
+function _create_qubo_model(rbm::GRBM, sampler, model_setup)
+    model = Model(() -> ToQUBO.Optimizer(sampler))
+    model_setup(model, sampler)
+    @variable(model, rbm.min_visible[i] <= vis[i = 1:rbm.n_visible] <= rbm.max_visible[i])
+    @variable(model, hid[1:rbm.n_hidden], Bin)
+    @objective(model, Min, -vis' * rbm.W * hid)
+    return model
+end
+
+function _update_qubo_model!(model, rbm::AbstractRBM)
     @objective(
         model,
         Min,
@@ -15,10 +24,10 @@ function _update_qubo_model!(model, rbm::RBM)
     )
 end
 
-function _qubo_sample(rbm::RBM, model)
+function _qubo_sample(rbm::AbstractRBM, model)
     optimize!(model)
-    v_sampled = zeros(Int, num_visible_nodes(rbm))
-    h_sampled = zeros(Int, num_hidden_nodes(rbm))
+    v_sampled = zeros(Float64, num_visible_nodes(rbm))
+    h_sampled = zeros(Float64, num_hidden_nodes(rbm))
     total_samples = result_count(model)
     for i in 1:total_samples
         v_sampled .+= value.(model[:vis], result = i)
@@ -28,9 +37,9 @@ function _qubo_sample(rbm::RBM, model)
 end
 
 function persistent_qubo!(
-    rbm::RBM,
+    rbm::AbstractRBM,
     model,
-    x::Vector{Vector{Int}},
+    x,
     mini_batches::Vector{UnitRange{Int}},
     learning_rate::Float64 = 0.1,
 )

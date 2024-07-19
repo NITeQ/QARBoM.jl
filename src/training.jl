@@ -1,5 +1,5 @@
 function train_cd!(
-    rbm::RBM,
+    rbm::AbstractRBM,
     x_train::Vector{Vector{Int}};
     n_epochs::Int,
     cd_steps::Int = 3,
@@ -53,7 +53,7 @@ function train_cd!(
 end
 
 function train_pcd!(
-    rbm::RBM,
+    rbm::AbstractRBM,
     x_train::T;
     n_epochs::Int,
     batch_size::Int,
@@ -114,7 +114,7 @@ function train_pcd!(
 end
 
 function train_fast_pcd!(
-    rbm::RBM,
+    rbm::AbstractRBM,
     x_train::Vector{Vector{Int}};
     n_epochs::Int,
     batch_size::Int,
@@ -176,8 +176,8 @@ function train_fast_pcd!(
 end
 
 function train_persistent_qubo!(
-    rbm::RBM,
-    x_train::Vector{Vector{Int}};
+    rbm::AbstractRBM,
+    x_train;
     n_epochs::Int,
     batch_size::Int,
     learning_rate::Vector{Float64},

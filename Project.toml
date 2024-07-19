@@ -6,8 +6,9 @@ version = "0.1.0"
 [deps]
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
-QUBO = "ce8c2e91-a970-4681-856b-16178c24a30c"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+ToQUBO = "9a412ddf-83fa-43b6-9748-7843c851aa65"
 
 [compat]
-QUBO = "0.3.0"
+ToQUBO = "0.1.8"
+julia = "1.9"

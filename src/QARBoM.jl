@@ -3,11 +3,11 @@ module QARBoM
 using Printf
 using Statistics
 using JuMP
-using QUBO
+using ToQUBO
 
 abstract type AbstractRBM end
 
-export RBM
+export RBM, GRBM
 
 include("utils.jl")
 include("rbm.jl")
