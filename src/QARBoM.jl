@@ -10,6 +10,7 @@ abstract type AbstractRBM end
 export RBM, GRBM
 
 include("utils.jl")
+include("loss.jl")
 include("rbm.jl")
 include("gibbs.jl")
 include("qubo.jl")

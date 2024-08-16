@@ -52,7 +52,7 @@ function update_rbm!(
 ) where {T <: Union{Vector{Int}, Vector{Float64}}}
     rbm.W .+= learning_rate .* (v_data * h_data' .- v_model * h_model')
     rbm.a .+= learning_rate .* (v_data .- v_model)
-    return rbm.b .+= learning_rate .* (h_data .- h_model)
+    rbm.b .+= learning_rate .* (h_data .- h_model)
 end
 
 # P(vᵢ = 1 | h) = sigmoid(aᵢ + Σⱼ Wᵢⱼ hⱼ)

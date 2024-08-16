@@ -64,8 +64,9 @@ function persistent_contrastive_divergence!(
             total_t_update += time() - t_update
 
             # loss by Mean Squared Error
-            reconstructed = reconstruct(rbm, sample)
-            loss += sum((sample .- reconstructed) .^ 2)
+            # reconstructed = reconstruct(rbm, sample)
+            # loss += sum((sample .- reconstructed) .^ 2)
+            loss = cross_entropy_loss(sample[53:57], reconstruct(rbm, sample)[53:57])
             i += 1
         end
 
@@ -74,7 +75,7 @@ function persistent_contrastive_divergence!(
         _update_fantasy_data!(rbm, fantasy_data)
         total_t_gibbs += time() - t_gibbs
     end
-    return loss / length(x), total_t_sample, total_t_gibbs, total_t_update
+    return loss , total_t_sample, total_t_gibbs, total_t_update
 end
 
 # Fast PCD-K mini-batch algorithm
