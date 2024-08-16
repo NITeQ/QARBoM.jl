@@ -78,6 +78,55 @@ function persistent_contrastive_divergence!(
     return loss , total_t_sample, total_t_gibbs, total_t_update
 end
 
+# PCD-K mini-batch algorithm
+# for classification
+function persistent_contrastive_divergence!(
+    rbm::GRBMClassifier,
+    x,
+    mini_batches::Vector{UnitRange{Int}},
+    fantasy_data::Vector{FantasyData};
+    label_range::UnitRange{Int},
+    learning_rate::Float64 = 0.1,
+    threshold::Float64 = 0.75,
+)
+    total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
+    accuracy = 0.0
+    for mini_batch in mini_batches
+        i = 1
+        for sample in x[mini_batch]
+            t_sample = time()
+            v_data = sample # training visible
+            h_data = conditional_prob_h(rbm, v_data) # hidden from training visible
+            total_t_sample += time() - t_sample
+
+            # Update hyperparameter
+            t_update = time()
+            update_rbm!(
+                rbm,
+                v_data,
+                h_data,
+                fantasy_data[i].v,
+                fantasy_data[i].h,
+                (learning_rate / length(mini_batch)),
+            )
+            total_t_update += time() - t_update
+
+            # loss by Mean Squared Error
+            # reconstructed = reconstruct(rbm, sample)
+            # loss += sum((sample .- reconstructed) .^ 2)
+            # loss = cross_entropy_loss(sample[53:57], reconstruct(rbm, sample)[53:57])
+            accuracy += evaluate_classifier(sample[label_range], reconstruct(rbm, sample)[label_range], threshold)
+            i += 1
+        end
+
+        # Update fantasy data
+        t_gibbs = time()
+        _update_fantasy_data!(rbm, fantasy_data)
+        total_t_gibbs += time() - t_gibbs
+    end
+    return accuracy / length(x) , total_t_sample, total_t_gibbs, total_t_update
+end
+
 # Fast PCD-K mini-batch algorithm
 # Tieleman and Hinton (2009) "Using fast weights to improve persistent contrastive divergence"
 function fast_persistent_contrastive_divergence!(

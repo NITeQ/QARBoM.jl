@@ -1,3 +1,4 @@
+# Bernoulli-Bernoulli RBM
 mutable struct RBM <: AbstractRBM
     W::Matrix{Float64} # weight matrix
     a::Vector{Float64} # visible bias
@@ -6,12 +7,25 @@ mutable struct RBM <: AbstractRBM
     n_hidden::Int # number of hidden units
 end
 
+# Gaussian-Bernoulli RBM
 mutable struct GRBM <: AbstractRBM
     W::Matrix{Float64} # weight matrix
     a::Vector{Float64} # visible bias
     b::Vector{Float64} # hidden bias
     n_visible::Int # number of visible units
     n_hidden::Int # number of hidden units
+    max_visible::Vector{Float64}
+    min_visible::Vector{Float64}
+end
+
+# GRBM for classification
+mutable struct GRBMClassifier <: AbstractRBM
+    W::Matrix{Float64} # weight matrix
+    a::Vector{Float64} # visible bias
+    b::Vector{Float64} # hidden bias
+    n_visible::Int # number of visible units
+    n_hidden::Int # number of hidden units
+    n_classifiers::Int # number of classifier bits
     max_visible::Vector{Float64}
     min_visible::Vector{Float64}
 end
@@ -40,6 +54,26 @@ function GRBM(n_visible::Int, n_hidden::Int, W::Matrix{Float64}, max_visible::Ve
     a = zeros(n_visible)
     b = zeros(n_hidden)
     return GRBM(copy(W), a, b, n_visible, n_hidden, max_visible, min_visible)
+end
+
+function GRBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, max_visible::Vector{Float64}, min_visible::Vector{Float64})
+    W = randn(n_visible, n_hidden)
+    a = zeros(n_visible)
+    b = zeros(n_hidden)
+    return GRBMClassifier(W, a, b, n_visible, n_hidden, n_classifiers, max_visible, min_visible)
+end
+
+function GRBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int)
+    W = randn(n_visible, n_hidden)
+    a = zeros(n_visible)
+    b = zeros(n_hidden)
+    return GRBMClassifier(W, a, b, n_visible, n_hidden, n_classifiers, [], [])
+end
+
+function GRBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, W::Matrix{Float64}, max_visible::Vector{Float64}, min_visible::Vector{Float64})
+    a = zeros(n_visible)
+    b = zeros(n_hidden)
+    return GRBMClassifier(copy(W), a, b, n_visible, n_hidden, n_classifiers, max_visible, min_visible)
 end
 
 function update_rbm!(
