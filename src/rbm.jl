@@ -76,6 +76,12 @@ function GRBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, W::Ma
     return GRBMClassifier(copy(W), a, b, n_visible, n_hidden, n_classifiers, max_visible, min_visible)
 end
 
+function GRBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, W::Matrix{Float64})
+    a = zeros(n_visible)
+    b = zeros(n_hidden)
+    return GRBMClassifier(copy(W), a, b, n_visible, n_hidden, n_classifiers, [], [])    
+end
+
 function update_rbm!(
     rbm::AbstractRBM,
     v_data::T,  
