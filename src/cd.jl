@@ -1,5 +1,5 @@
 # Estimates v~ from the RBM model using the Contrastive Divergence algorithm
-function _get_v_model(rbm::RBM, v::Vector{Int}, n_gibbs::Int)
+function _get_v_model(rbm::AbstractRBM, v::Vector{Int}, n_gibbs::Int)
     for _ in 1:n_gibbs
         h = gibbs_sample_hidden(rbm, v)
         v = gibbs_sample_visible(rbm, h)
@@ -8,7 +8,7 @@ function _get_v_model(rbm::RBM, v::Vector{Int}, n_gibbs::Int)
 end
 
 # CD-K algorithm
-function contrastive_divergence!(rbm::RBM, x; steps::Int, learning_rate::Float64 = 0.1)
+function contrastive_divergence!(rbm::AbstractRBM, x; steps::Int, learning_rate::Float64 = 0.1)
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     loss = 0.0
     for sample in x
