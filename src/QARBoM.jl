@@ -10,7 +10,6 @@ abstract type AbstractRBM end
 export RBM, GRBM, GRBMClassifier
 
 include("utils.jl")
-include("metrics.jl")
 include("rbm.jl")
 include("gibbs.jl")
 include("qubo.jl")
