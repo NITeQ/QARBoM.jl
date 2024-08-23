@@ -10,10 +10,10 @@ function test_pcd()
     trainset = MNIST(:train)
     x_test, y_test = trainset[:]
 
-    x_bin = [vec(round.(Int, x_test[:, :, i])) for i = 1:50000]
+    x_bin = [vec(round.(Int, x_test[:, :, i])) for i in 1:50000]
 
     # Train RBM
-    QARBoM.train_pcd(rbm, x_bin; batch_size = 50, n_epochs = 10, learning_rate = 0.1)
+    return QARBoM.train_pcd(rbm, x_bin; batch_size = 50, n_epochs = 10, learning_rate = 0.1)
 end
 
 test_pcd()

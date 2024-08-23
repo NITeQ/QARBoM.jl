@@ -59,7 +59,7 @@ function train_pcd!(
     batch_size::Int,
     learning_rate::Float64,
     evaluation_function::Function,
-    metrics::Any
+    metrics::Any,
 ) where {T <: Union{Vector{Vector{Int}}, Vector{Vector{Float64}}}}
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     println("Setting mini-batches")
@@ -113,7 +113,7 @@ function train_pcd!(
     println("Total time spent sampling: $total_t_sample")
     println("Total time spent in Gibbs sampling: $total_t_gibbs")
     println("Total time spent updating parameters: $total_t_update")
-    println("Total time spent training: $(total_t_sample + total_t_gibbs + total_t_update)")
+    return println("Total time spent training: $(total_t_sample + total_t_gibbs + total_t_update)")
 end
 
 function train_fast_pcd!(
@@ -187,7 +187,7 @@ function train_persistent_qubo!(
     model_setup::Function,
     sampler,
     evaluation_function::Function,
-    metrics::Any
+    metrics::Any,
 )
     println("Setting up QUBO model")
     qubo_model = _create_qubo_model(rbm, sampler, model_setup)
@@ -200,15 +200,15 @@ function train_persistent_qubo!(
     for epoch in 1:n_epochs
         t_sample, t_qs, t_update =
             persistent_qubo!(
-                rbm, 
-                qubo_model, 
+                rbm,
+                qubo_model,
                 x_train,
-                epoch, 
-                mini_batches; 
+                epoch,
+                mini_batches;
                 learning_rate = learning_rate[epoch],
                 evaluation_function = evaluation_function,
                 metrics = metrics,
-                )
+            )
 
         total_t_sample += t_sample
         total_t_qs += t_qs
@@ -245,5 +245,5 @@ function train_persistent_qubo!(
     println("Total time spent sampling: $total_t_sample")
     println("Total time spent in Quantum sampling: $total_t_qs")
     println("Total time spent updating parameters: $total_t_update")
-    println("Total time spent training: $(total_t_sample + total_t_qs + total_t_update)")
+    return println("Total time spent training: $(total_t_sample + total_t_qs + total_t_update)")
 end

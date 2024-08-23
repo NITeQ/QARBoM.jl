@@ -2,7 +2,6 @@ using MLDatasets
 using Profile, PProf
 using QARBoM
 
-
 # Initialize RBM
 visible_units = 784
 hidden_units = 500
@@ -12,7 +11,7 @@ rbm = QARBoM.RBM(visible_units, hidden_units)
 trainset = MNIST(:train)
 x_test, y_test = trainset[:]
 
-x_bin = [vec(round.(Int, x_test[:, :, i])) for i = 1:100]
+x_bin = [vec(round.(Int, x_test[:, :, i])) for i in 1:100]
 
 # Train RBM
 Profile.clear()

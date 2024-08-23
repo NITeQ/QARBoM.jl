@@ -70,7 +70,14 @@ function GRBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int)
     return GRBMClassifier(W, a, b, n_visible, n_hidden, n_classifiers, [], [])
 end
 
-function GRBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, W::Matrix{Float64}, max_visible::Vector{Float64}, min_visible::Vector{Float64})
+function GRBMClassifier(
+    n_visible::Int,
+    n_hidden::Int,
+    n_classifiers::Int,
+    W::Matrix{Float64},
+    max_visible::Vector{Float64},
+    min_visible::Vector{Float64},
+)
     a = zeros(n_visible)
     b = zeros(n_hidden)
     return GRBMClassifier(copy(W), a, b, n_visible, n_hidden, n_classifiers, max_visible, min_visible)
@@ -79,12 +86,12 @@ end
 function GRBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, W::Matrix{Float64})
     a = zeros(n_visible)
     b = zeros(n_hidden)
-    return GRBMClassifier(copy(W), a, b, n_visible, n_hidden, n_classifiers, [], [])    
+    return GRBMClassifier(copy(W), a, b, n_visible, n_hidden, n_classifiers, [], [])
 end
 
 function update_rbm!(
     rbm::AbstractRBM,
-    v_data::T,  
+    v_data::T,
     h_data::Vector{Float64},
     v_model::Vector{Float64},
     h_model::Vector{Float64},
@@ -92,7 +99,7 @@ function update_rbm!(
 ) where {T <: Union{Vector{Int}, Vector{Float64}}}
     rbm.W .+= learning_rate .* (v_data * h_data' .- v_model * h_model')
     rbm.a .+= learning_rate .* (v_data .- v_model)
-    rbm.b .+= learning_rate .* (h_data .- h_model)
+    return rbm.b .+= learning_rate .* (h_data .- h_model)
 end
 
 # P(vᵢ = 1 | h) = sigmoid(aᵢ + Σⱼ Wᵢⱼ hⱼ)

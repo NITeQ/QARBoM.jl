@@ -22,7 +22,7 @@ function _create_qubo_model(rbm::GRBMClassifier, sampler, model_setup)
     @variable(model, rbm.min_visible[i] <= vis[i = 1:length(rbm.max_visible)] <= rbm.max_visible[i])
     @variable(model, label[1:rbm.n_classifiers], Bin)
     @variable(model, hid[1:rbm.n_hidden], Bin)
-    @objective(model, Min, -vcat(vis,label)' * rbm.W * hid)
+    @objective(model, Min, -vcat(vis, label)' * rbm.W * hid)
     return model
 end
 
@@ -74,7 +74,7 @@ function persistent_qubo!(
     mini_batches::Vector{UnitRange{Int}};
     learning_rate::Float64 = 0.1,
     evaluation_function::Function,
-    metrics::Any
+    metrics::Any,
 )
     total_t_sample, total_t_qs, total_t_update = 0.0, 0.0, 0.0
     for mini_batch in mini_batches

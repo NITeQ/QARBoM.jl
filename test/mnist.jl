@@ -10,10 +10,10 @@ function test_cd()
     trainset = MNIST(:train)
     x_test, y_test = trainset[:]
 
-    x_bin = [vec(round.(Int, x_test[:, :, i])) for i = 1:100]
+    x_bin = [vec(round.(Int, x_test[:, :, i])) for i in 1:100]
 
     # Train RBM
-    QARBoM.train(rbm, x_bin, QARBoM.CD(); n_epochs = 10, cd_steps = 1, learning_rate = 0.1)
+    return QARBoM.train(rbm, x_bin, QARBoM.CD(); n_epochs = 10, cd_steps = 1, learning_rate = 0.1)
 end
 
 test_cd()
