@@ -7,7 +7,26 @@ function _create_qubo_model(rbm::RBM, sampler, model_setup)
     return model
 end
 
-function _update_qubo_model!(model, rbm::RBM)
+function _create_qubo_model(rbm::GRBM, sampler, model_setup)
+    model = Model(() -> ToQUBO.Optimizer(sampler))
+    model_setup(model, sampler)
+    @variable(model, rbm.min_visible[i] <= vis[i = 1:rbm.n_visible] <= rbm.max_visible[i])
+    @variable(model, hid[1:rbm.n_hidden], Bin)
+    @objective(model, Min, -vis' * rbm.W * hid)
+    return model
+end
+
+function _create_qubo_model(rbm::GRBMClassifier, sampler, model_setup)
+    model = Model(() -> ToQUBO.Optimizer(sampler))
+    model_setup(model, sampler)
+    @variable(model, rbm.min_visible[i] <= vis[i = 1:length(rbm.max_visible)] <= rbm.max_visible[i])
+    @variable(model, label[1:rbm.n_classifiers], Bin)
+    @variable(model, hid[1:rbm.n_hidden], Bin)
+    @objective(model, Min, -vcat(vis,label)' * rbm.W * hid)
+    return model
+end
+
+function _update_qubo_model!(model, rbm::AbstractRBM)
     @objective(
         model,
         Min,
@@ -15,10 +34,18 @@ function _update_qubo_model!(model, rbm::RBM)
     )
 end
 
-function _qubo_sample(rbm::RBM, model)
+function _update_qubo_model!(model, rbm::GRBMClassifier)
+    @objective(
+        model,
+        Min,
+        -vcat(model[:vis], model[:label])' * rbm.W * model[:hid] - rbm.a'vcat(model[:vis], model[:label]) - rbm.b'model[:hid]
+    )
+end
+
+function _qubo_sample(rbm::AbstractRBM, model)
     optimize!(model)
-    v_sampled = zeros(Int, num_visible_nodes(rbm))
-    h_sampled = zeros(Int, num_hidden_nodes(rbm))
+    v_sampled = zeros(Float64, num_visible_nodes(rbm))
+    h_sampled = zeros(Float64, num_hidden_nodes(rbm))
     total_samples = result_count(model)
     for i in 1:total_samples
         v_sampled .+= value.(model[:vis], result = i)
@@ -27,15 +54,29 @@ function _qubo_sample(rbm::RBM, model)
     return v_sampled ./ total_samples, h_sampled ./ total_samples
 end
 
+function _qubo_sample(rbm::GRBMClassifier, model)
+    optimize!(model)
+    v_sampled = zeros(Float64, num_visible_nodes(rbm))
+    h_sampled = zeros(Float64, num_hidden_nodes(rbm))
+    total_samples = result_count(model)
+    for i in 1:total_samples
+        v_sampled .+= vcat(value.(model[:vis], result = i), value.(model[:label], result = i))
+        h_sampled .+= value.(model[:hid], result = i)
+    end
+    return v_sampled ./ total_samples, h_sampled ./ total_samples
+end
+
 function persistent_qubo!(
-    rbm::RBM,
+    rbm::AbstractRBM,
     model,
-    x::Vector{Vector{Int}},
-    mini_batches::Vector{UnitRange{Int}},
+    x,
+    epoch::Int,
+    mini_batches::Vector{UnitRange{Int}};
     learning_rate::Float64 = 0.1,
+    evaluation_function::Function,
+    metrics::Any
 )
     total_t_sample, total_t_qs, total_t_update = 0.0, 0.0, 0.0
-    loss = 0.0
     for mini_batch in mini_batches
         t_qs = time()
         v_model, h_model = _qubo_sample(rbm, model) # v~, h~
@@ -58,13 +99,11 @@ function persistent_qubo!(
             )
             total_t_update += time() - t_update
 
-            # loss by Mean Squared Error
-            reconstructed = reconstruct(rbm, sample)
-            loss += sum((sample .- reconstructed) .^ 2)
+            evaluation_function(sample, reconstruct(rbm, sample), metrics, epoch)
         end
         t_update = time()
         _update_qubo_model!(model, rbm)
         total_t_update += time() - t_update
     end
-    return loss / length(x), total_t_sample, total_t_qs, total_t_update
+    return total_t_sample, total_t_qs, total_t_update
 end

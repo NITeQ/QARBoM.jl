@@ -3,7 +3,7 @@ mutable struct FantasyData
     h::Vector{Float64}
 end
 
-function _update_fantasy_data!(rbm::RBM, fantasy_data::Vector{FantasyData})
+function _update_fantasy_data!(rbm::AbstractRBM, fantasy_data::Vector{FantasyData})
     for i in 1:length(fantasy_data)
         fantasy_data[i].h = gibbs_sample_hidden(rbm, fantasy_data[i].v)
         fantasy_data[i].v = gibbs_sample_visible(rbm, fantasy_data[i].h)
@@ -11,7 +11,7 @@ function _update_fantasy_data!(rbm::RBM, fantasy_data::Vector{FantasyData})
 end
 
 function _update_fantasy_data!(
-    rbm::RBM,
+    rbm::AbstractRBM,
     fantasy_data::Vector{FantasyData},
     W_fast::Matrix{Float64},
     a_fast::Vector{Float64},
@@ -23,7 +23,7 @@ function _update_fantasy_data!(
     end
 end
 
-function _init_fantasy_data(rbm::RBM, batch_size::Int)
+function _init_fantasy_data(rbm::AbstractRBM, batch_size::Int)
     fantasy_data = Vector{FantasyData}(undef, batch_size)
     for i in 1:batch_size
         fantasy_data[i] =
@@ -33,18 +33,20 @@ function _init_fantasy_data(rbm::RBM, batch_size::Int)
 end
 
 # PCD-K mini-batch algorithm
-# Tieleman (2008) "Training restricted Boltzmann machines using approximations to the likelihood gradient"
+# for classification
 function persistent_contrastive_divergence!(
-    rbm::RBM,
+    rbm::AbstractRBM,
     x,
+    epoch::Int,
     mini_batches::Vector{UnitRange{Int}},
     fantasy_data::Vector{FantasyData};
     learning_rate::Float64 = 0.1,
+    evaluation_function::Function,
+    metrics::Any,
 )
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
-    loss = 0.0
     for mini_batch in mini_batches
-        i = 1
+        batch_index = 1
         for sample in x[mini_batch]
             t_sample = time()
             v_data = sample # training visible
@@ -57,16 +59,14 @@ function persistent_contrastive_divergence!(
                 rbm,
                 v_data,
                 h_data,
-                fantasy_data[i].v,
-                fantasy_data[i].h,
+                fantasy_data[batch_index].v,
+                fantasy_data[batch_index].h,
                 (learning_rate / length(mini_batch)),
             )
             total_t_update += time() - t_update
 
-            # loss by Mean Squared Error
-            reconstructed = reconstruct(rbm, sample)
-            loss += sum((sample .- reconstructed) .^ 2)
-            i += 1
+            evaluation_function(sample, reconstruct(rbm, sample), metrics, epoch)
+            batch_index += 1
         end
 
         # Update fantasy data
@@ -74,13 +74,13 @@ function persistent_contrastive_divergence!(
         _update_fantasy_data!(rbm, fantasy_data)
         total_t_gibbs += time() - t_gibbs
     end
-    return loss / length(x), total_t_sample, total_t_gibbs, total_t_update
+    return total_t_sample, total_t_gibbs, total_t_update
 end
 
 # Fast PCD-K mini-batch algorithm
 # Tieleman and Hinton (2009) "Using fast weights to improve persistent contrastive divergence"
 function fast_persistent_contrastive_divergence!(
-    rbm::RBM,
+    rbm::AbstractRBM,
     x,
     mini_batches::Vector{UnitRange{Int}},
     fantasy_data::Vector{FantasyData};
