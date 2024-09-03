@@ -8,6 +8,7 @@ end
 
 num_visible_nodes(rbm::AbstractRBM) = rbm.n_visible
 num_hidden_nodes(rbm::AbstractRBM) = rbm.n_hidden
+num_label_nodes(rbm::AbstractRBM) = rbm.n_classifiers
 
 function _set_mini_batches(training_set_length::Int, batch_size::Int)
     n_batches = round(Int, training_set_length / batch_size)

@@ -99,7 +99,7 @@ function persistent_qubo!(
             )
             total_t_update += time() - t_update
 
-            evaluation_function(sample, reconstruct(rbm, sample), metrics, epoch)
+            evaluation_function(rbm, sample, metrics, epoch)
         end
         t_update = time()
         _update_qubo_model!(model, rbm)

@@ -54,13 +54,13 @@ end
 
 function train_pcd!(
     rbm::AbstractRBM,
-    x_train::T;
+    x_train;
     n_epochs::Int,
     batch_size::Int,
     learning_rate::Float64,
     evaluation_function::Function,
     metrics::Any,
-) where {T <: Union{Vector{Vector{Int}}, Vector{Vector{Float64}}}}
+) 
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     println("Setting mini-batches")
     mini_batches = _set_mini_batches(length(x_train), batch_size)
