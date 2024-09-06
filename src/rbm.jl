@@ -39,6 +39,8 @@ mutable struct RBMClassifier <: AbstractRBM
     n_visible::Int # number of visible units
     n_hidden::Int # number of hidden units
     n_classifiers::Int # number of classifier bits
+    max_visible::Vector{Float64}
+    min_visible::Vector{Float64}
 end
 
 function RBM(n_visible::Int, n_hidden::Int)
@@ -106,14 +108,30 @@ function RBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int)
     a = zeros(n_visible)
     b = zeros(n_hidden)
     c = zeros(n_classifiers)
-    return RBMClassifier(W, U, a, b, c, n_visible, n_hidden, n_classifiers)
+    return RBMClassifier(W, U, a, b, c, n_visible, n_hidden, n_classifiers, [], [])
 end
 
 function RBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, W::Matrix{Float64}, U::Matrix{Float64})
     a = zeros(n_visible)
     b = zeros(n_hidden)
     c = zeros(n_classifiers)
-    return RBMClassifier(copy(W), copy(U), a, b, c, n_visible, n_hidden, n_classifiers)
+    return RBMClassifier(copy(W), copy(U), a, b, c, n_visible, n_hidden, n_classifiers, [], [])
+end
+
+function RBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, max_visible::Vector{Float64}, min_visible::Vector{Float64})
+    W = randn(n_visible, n_hidden)
+    U = randn(n_classifiers, n_hidden)
+    a = zeros(n_visible)
+    b = zeros(n_hidden)
+    c = zeros(n_classifiers)
+    return RBMClassifier(W, U, a, b, c, n_visible, n_hidden, n_classifiers, max_visible, min_visible)
+end
+
+function RBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, max_visible::Vector{Float64}, min_visible::Vector{Float64}, W::Matrix{Float64}, U::Matrix{Float64})
+    a = zeros(n_visible)
+    b = zeros(n_hidden)
+    c = zeros(n_classifiers)
+    return RBMClassifier(copy(W), copy(U), a, b, c, n_visible, n_hidden, n_classifiers, max_visible, min_visible)
 end
 
 function update_rbm!(
