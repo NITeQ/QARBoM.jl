@@ -2,12 +2,6 @@ _sigmoid(x::Float64) = 1 / (1 + exp(-x))
 
 _relu(x::Float64) = max(0, x)
 
-_get_permutations(n::Int) = [_int_to_bin_array(i, n) for i in 0:2^n-1]
-
-function _int_to_bin_array(x::Int, n::Int)
-    return [parse(Int, i) for i in string(x; base = 2, pad = n)]
-end
-
 num_visible_nodes(rbm::AbstractRBM) = rbm.n_visible
 num_hidden_nodes(rbm::AbstractRBM) = rbm.n_hidden
 num_label_nodes(rbm::AbstractRBM) = rbm.n_classifiers
@@ -24,10 +18,3 @@ function _set_mini_batches(training_set_length::Int, batch_size::Int)
     end
     return mini_batches
 end
-
-# function _rbm_qubo(num_visible::Int, num_hidden::Int)
-#     Q = zeros(num_visible + num_hidden, num_visible + num_hidden)
-#     Q[1:num_visible, num_visible+1:num_visible+num_hidden] = randn(num_visible, num_hidden)
-#     Q[num_visible+1:num_visible+num_hidden, 1:num_visible] = Q[1:num_visible, num_visible+1:num_visible+num_hidden]'
-#     return Q
-# end

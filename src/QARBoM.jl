@@ -4,11 +4,10 @@ using Printf
 using Statistics
 using JuMP
 using ToQUBO
-using NNlib
 
 abstract type AbstractRBM end
 
-export RBM, GRBM, GRBMClassifier, RBMClassifier
+export RBM, GRBM, RBMClassifier
 
 include("utils.jl")
 include("rbm.jl")

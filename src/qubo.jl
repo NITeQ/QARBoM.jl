@@ -22,17 +22,7 @@ function _create_qubo_model(rbm::RBMClassifier, sampler, model_setup)
     @variable(model, rbm.min_visible[i] <= vis[i = 1:rbm.n_visible] <= rbm.max_visible[i])
     @variable(model, label[1:rbm.n_classifiers], Bin)
     @variable(model, hid[1:rbm.n_hidden], Bin)
-    @objective(model, Min, -vis'*rbm.W*hid - label'*rbm.U*hid)
-    return model
-end
-
-function _create_qubo_model(rbm::GRBMClassifier, sampler, model_setup)
-    model = Model(() -> ToQUBO.Optimizer(sampler))
-    model_setup(model, sampler)
-    @variable(model, rbm.min_visible[i] <= vis[i = 1:length(rbm.max_visible)] <= rbm.max_visible[i])
-    @variable(model, label[1:rbm.n_classifiers], Bin)
-    @variable(model, hid[1:rbm.n_hidden], Bin)
-    @objective(model, Min, -vcat(vis, label)' * rbm.W * hid)
+    @objective(model, Min, -vis' * rbm.W * hid - label' * rbm.U * hid)
     return model
 end
 
@@ -49,14 +39,6 @@ function _update_qubo_model!(model, rbm::RBMClassifier)
         model,
         Min,
         -model[:vis]' * rbm.W * model[:hid] - rbm.a'model[:vis] - rbm.b'model[:hid] - model[:label]' * rbm.U * model[:hid] - rbm.c'model[:label]
-        )
-end
-
-function _update_qubo_model!(model, rbm::GRBMClassifier)
-    @objective(
-        model,
-        Min,
-        -vcat(model[:vis], model[:label])' * rbm.W * model[:hid] - rbm.a'vcat(model[:vis], model[:label]) - rbm.b'model[:hid]
     )
 end
 
@@ -75,7 +57,7 @@ end
 function _qubo_sample(rbm::RBMClassifier, model)
     optimize!(model)
     v_sampled = zeros(Float64, num_visible_nodes(rbm))
-    label_sampled = zeros(Float64, num_label_nodes(rbm)) 
+    label_sampled = zeros(Float64, num_label_nodes(rbm))
     h_sampled = zeros(Float64, num_hidden_nodes(rbm))
     total_samples = result_count(model)
     for i in 1:total_samples
@@ -84,18 +66,6 @@ function _qubo_sample(rbm::RBMClassifier, model)
         label_sampled .+= value.(model[:label], result = i)
     end
     return v_sampled ./ total_samples, h_sampled ./ total_samples, label_sampled ./ total_samples
-end
-
-function _qubo_sample(rbm::GRBMClassifier, model)
-    optimize!(model)
-    v_sampled = zeros(Float64, num_visible_nodes(rbm))
-    h_sampled = zeros(Float64, num_hidden_nodes(rbm))
-    total_samples = result_count(model)
-    for i in 1:total_samples
-        v_sampled .+= vcat(value.(model[:vis], result = i), value.(model[:label], result = i))
-        h_sampled .+= value.(model[:hid], result = i)
-    end
-    return v_sampled ./ total_samples, h_sampled ./ total_samples
 end
 
 function persistent_qubo!(
@@ -139,7 +109,6 @@ function persistent_qubo!(
     end
     return total_t_sample, total_t_qs, total_t_update
 end
-
 
 function persistent_qubo!(
     rbm::RBMClassifier,

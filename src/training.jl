@@ -60,7 +60,7 @@ function train_pcd!(
     learning_rate::Vector{Float64},
     evaluation_function::Function,
     metrics::Any,
-) 
+)
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     println("Setting mini-batches")
     mini_batches = _set_mini_batches(length(x_train), batch_size)
