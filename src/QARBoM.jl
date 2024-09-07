@@ -7,7 +7,7 @@ using ToQUBO
 
 abstract type AbstractRBM end
 
-export RBM, GRBM, GRBMClassifier
+export RBM, GRBM, RBMClassifier
 
 include("utils.jl")
 include("rbm.jl")
