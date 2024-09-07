@@ -57,7 +57,7 @@ function train_pcd!(
     x_train::T;
     n_epochs::Int,
     batch_size::Int,
-    learning_rate::Float64,
+    learning_rate::Vector{Float64},
     evaluation_function::Function,
     metrics::Any,
 ) where {T <: Union{Vector{Vector{Int}}, Vector{Vector{Float64}}}}
@@ -75,7 +75,7 @@ function train_pcd!(
             mini_batches,
             fantasy_data;
             evaluation_function = evaluation_function,
-            learning_rate = learning_rate,
+            learning_rate = learning_rate[epoch],
             metrics = metrics,
         )
 
