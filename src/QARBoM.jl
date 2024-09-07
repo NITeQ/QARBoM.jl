@@ -4,6 +4,7 @@ using Printf
 using Statistics
 using JuMP
 using ToQUBO
+using NNlib
 
 abstract type AbstractRBM end
 

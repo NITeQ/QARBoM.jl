@@ -203,6 +203,19 @@ function _prob_y_given_h(rbm::RBMClassifier, y_i::Int, h::Vector{T}) where {T <:
     return exp(rbm.c[y_i] + rbm.U[y_i, :]' * h) / sum(exp.(rbm.c .+ rbm.U * h))
 end
 
+function _prob_y_given_v(rbm::RBMClassifier, y_i::Int, v::Vector{T}, γ::Vector{Float64}, denominator::Float64) where {T <: Union{Int, Float64}}
+    # e^{c_k} * Π_j (1 + e^{γ_j + U_kj }) / Σ_k (e^{c_k} * Π_j (1 + e^{ γ_j + U_k*j }))
+
+    # return exp(rbm.c[y_i]) * prod(1 .+ exp.(γ .+ rbm.U[y_i, :])) / denominator
+
+    return rbm.c[y_i] + sum(
+        log(1 + exp(γ[h_j] + rbm.U[y_i, h_j]))
+        for h_j in 1:rbm.n_hidden
+    ) - log(denominator)
+
+
+end
+
 conditional_prob_h(rbm::AbstractRBM, v::Vector{T}) where {T <: Union{Int, Float64}} =
     [_prob_h_given_v(rbm, h_i, v) for h_i in 1:num_hidden_nodes(rbm)]
 conditional_prob_h(rbm::RBMClassifier, v::Vector{T}, y::Vector{T}) where {T <: Union{Int, Float64}} =
@@ -210,8 +223,26 @@ conditional_prob_h(rbm::RBMClassifier, v::Vector{T}, y::Vector{T}) where {T <: U
 
 conditional_prob_v(rbm::AbstractRBM, h::Vector{T}) where {T <: Union{Int, Float64}} =
     [_prob_v_given_h(rbm, v_i, h) for v_i in 1:num_visible_nodes(rbm)]
-conditional_prob_y(rbm::RBMClassifier, h::Vector{T}) where {T <: Union{Int, Float64}} =
-    [_prob_y_given_h(rbm, y_i, h) for y_i in 1:rbm.n_classifiers]
+# conditional_prob_y(rbm::RBMClassifier, h::Vector{T}) where {T <: Union{Int, Float64}} =
+#     [_prob_y_given_h(rbm, y_i, h) for y_i in 1:rbm.n_classifiers]
+
+function conditional_prob_y(rbm::RBMClassifier, v::Vector{T}) where {T <: Union{Int, Float64}} 
+
+    # γ = rbm.b .+ rbm.W' * v # precomputed factor b_j + Σᵢ Wᵢⱼ vᵢ
+    
+    log_prob = zeros(rbm.n_classifiers)
+
+    for y_i in 1:rbm.n_classifiers
+        log_prob[y_i] += rbm.c[y_i]
+        for h_j in 1:rbm.n_hidden
+            log_prob[y_i] += log(1 + exp(rbm.b[h_j] + rbm.W[:, h_j]' * v + rbm.U[y_i, h_j]))
+        end
+    end
+
+    
+    
+
+end
 
 
 function reconstruct(rbm::AbstractRBM, v::Vector{T}) where {T <: Union{Int, Float64}}
