@@ -223,21 +223,35 @@ conditional_prob_h(rbm::RBMClassifier, v::Vector{T}, y::Vector{T}) where {T <: U
 
 conditional_prob_v(rbm::AbstractRBM, h::Vector{T}) where {T <: Union{Int, Float64}} =
     [_prob_v_given_h(rbm, v_i, h) for v_i in 1:num_visible_nodes(rbm)]
-# conditional_prob_y(rbm::RBMClassifier, h::Vector{T}) where {T <: Union{Int, Float64}} =
-#     [_prob_y_given_h(rbm, y_i, h) for y_i in 1:rbm.n_classifiers]
 
 function conditional_prob_y(rbm::RBMClassifier, v::Vector{T}) where {T <: Union{Int, Float64}} 
 
     # γ = rbm.b .+ rbm.W' * v # precomputed factor b_j + Σᵢ Wᵢⱼ vᵢ
     
-    log_prob = zeros(rbm.n_classifiers)
+    class_probabilities = zeros(rbm.n_classifiers)
 
     for y_i in 1:rbm.n_classifiers
-        log_prob[y_i] += rbm.c[y_i]
+        class_probabilities[y_i] = rbm.c[y_i]
         for h_j in 1:rbm.n_hidden
-            log_prob[y_i] += log(1 + exp(rbm.b[h_j] + rbm.W[:, h_j]' * v + rbm.U[y_i, h_j]))
+            class_probabilities[y_i] += log(1 + exp(rbm.U[y_i, h_j] + rbm.W[:, h_j]' * v))
+        end
+    end 
+
+
+    copy_probabilities = zeros(rbm.n_classifiers)
+
+    for y_i in 1:rbm.n_classifiers
+        for y_j in 1:rbm.n_classifiers
+            copy_probabilities[y_i] += exp(class_probabilities[y_j] - class_probabilities[y_i])
         end
     end
+
+    copy_probabilities = 1 ./ copy_probabilities
+
+    return copy_probabilities
+        
+
+
 
     
     
