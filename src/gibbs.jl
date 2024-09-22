@@ -25,5 +25,35 @@ gibbs_sample_visible(
 # for classification
 gibbs_sample_hidden(rbm::RBMClassifier, v::Vector{T}, y::Vector{T}) where {T <: Union{Int, Float64}} =
     [rand() < _prob_h_given_vy(rbm, h_i, v, y) ? 1 : 0 for h_i in 1:num_hidden_nodes(rbm)]
-gibs_sample_label(rbm::RBMClassifier, h::Vector{T}) where {T <: Union{Int, Float64}} =
+gibbs_sample_hidden(
+    rbm::RBMClassifier,
+    v::Vector{T},
+    y::Vector{T},
+    W_fast::Matrix{Float64},
+    U_fast::Matrix{Float64},
+    b_fast::Vector{Float64},
+) where {T <: Union{Int, Float64}} = [
+    rand() < _prob_h_given_vy(rbm, W_fast, U_fast, b_fast, h_i, v, y) ? 1 : 0 for
+    h_i in 1:num_hidden_nodes(rbm)
+]
+
+gibbs_sample_label(rbm::RBMClassifier, h::Vector{T}) where {T <: Union{Int, Float64}} =
     [rand() < _prob_y_given_h(rbm, y_i, h) ? 1 : 0 for y_i in 1:num_label_nodes(rbm)]
+function gibbs_sample_label(
+    rbm::RBMClassifier,
+    h::Vector{T},
+    W_fast::Matrix{Float64},
+    c_fast::Vector{Float64},
+) where {T <: Union{Int, Float64}}
+    return [rand() < _prob_y_given_h(rbm, y_i, h, W_fast, c_fast) ? 1 : 0 for y_i in 1:num_label_nodes(rbm)
+    ]
+end
+
+# Estimates v~ from the RBM model using the Contrastive Divergence algorithm
+function _get_v_model(rbm::AbstractRBM, v::Vector{Int}, n_gibbs::Int)
+    for _ in 1:n_gibbs
+        h = gibbs_sample_hidden(rbm, v)
+        v = gibbs_sample_visible(rbm, h)
+    end
+    return v
+end
