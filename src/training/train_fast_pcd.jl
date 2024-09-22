@@ -144,10 +144,10 @@ function train_fast_pcd!(
     metrics::Any,
 )
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
-    @info "Setting mini-batches"
+    println("Setting mini-batches")
     mini_batches = _set_mini_batches(length(x_train), batch_size)
     fantasy_data = _init_fantasy_data(rbm, batch_size)
-    @info "Starting training"
+    println("Starting training")
 
     for epoch in 1:n_epochs
         t_sample, t_gibbs, t_update = fast_persistent_contrastive_divergence!(

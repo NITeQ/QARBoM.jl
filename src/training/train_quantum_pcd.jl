@@ -9,12 +9,12 @@ function train_persistent_qubo!(
     evaluation_function::Function,
     metrics::Any,
 )
-    @info "Setting up QUBO model"
+    println("Setting up QUBO model")
     qubo_model = _create_qubo_model(rbm, sampler, model_setup)
     total_t_sample, total_t_qs, total_t_update = 0.0, 0.0, 0.0
-    @info "Setting mini-batches"
+    println("Setting mini-batches")
     mini_batches = _set_mini_batches(length(x_train), batch_size)
-    @info "Starting training"
+    println("Starting training")
 
     for epoch in 1:n_epochs
         t_sample, t_qs, t_update =
