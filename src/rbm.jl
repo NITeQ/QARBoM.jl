@@ -163,8 +163,41 @@ function _prob_h_given_vy(rbm::RBMClassifier, h_i::Int, v::Vector{T}, y::Vector{
     return _sigmoid(rbm.b[h_i] + rbm.W[:, h_i]' * v + rbm.U[:, h_i]' * y)
 end
 
+function _prob_h_given_vy(
+    rbm::RBMClassifier,
+    W_fast::Matrix{Float64},
+    U_fast::Matrix{Float64},
+    b_fast::Vector{Float64},
+    h_i::Int,
+    v::Vector{T},
+    y::Vector{T},
+) where {T <: Union{Int, Float64}}
+    return _sigmoid((rbm.b[h_i] + b_fast[h_i]) + (rbm.W[:, h_i] + W_fast[:, h_i])' * v + (rbm.U[:, h_i] + U_fast[:, h_i])' * y)
+end
+
 function _prob_y_given_h(rbm::RBMClassifier, y_i::Int, h::Vector{T}) where {T <: Union{Int, Float64}}
-    return exp(rbm.c[y_i] + rbm.U[y_i, :]' * h) / sum(exp.(rbm.c .+ rbm.U * h))
+    # Compute the log of the numerator
+    log_numerator = rbm.c[y_i] + rbm.U[y_i, :]' * h
+
+    # Compute the log of the denominator using logsumexp for numerical stability
+    log_denominator = logsumexp(rbm.c .+ rbm.U * h)
+
+    # Return the probability p(y|h) in a numerically stable way
+    return exp(log_numerator - log_denominator)
+end
+
+function _prob_y_given_h(
+    rbm::RBMClassifier,
+    y_i::Int,
+    h::Vector{T},
+    W_fast::Matrix{Float64},
+    c_fast::Vector{Float64},
+) where {T <: Union{Int, Float64}}
+    log_numerator = (rbm.c[y_i] + c_fast[y_i]) + (rbm.U[y_i, :] + W_fast[y_i, :])' * h
+
+    log_denominator = logsumexp((rbm.c .+ c_fast) .+ (rbm.U .+ W_fast) * h)
+
+    return exp(log_numerator - log_denominator)
 end
 
 conditional_prob_h(rbm::AbstractRBM, v::Vector{T}) where {T <: Union{Int, Float64}} =
@@ -179,23 +212,12 @@ function conditional_prob_y(rbm::RBMClassifier, v::Vector{T}) where {T <: Union{
     class_probabilities = zeros(rbm.n_classifiers)
 
     for y_i in 1:rbm.n_classifiers
-        class_probabilities[y_i] = rbm.c[y_i]
-        for h_j in 1:rbm.n_hidden
-            class_probabilities[y_i] += log(1 + exp(rbm.U[y_i, h_j] + rbm.W[:, h_j]' * v))
-        end
+        class_probabilities[y_i] = rbm.c[y_i] + sum(log1pexp(rbm.U[y_i, h_j] + rbm.W[:, h_j]' * v + rbm.b[h_j]) for h_j in 1:rbm.n_hidden)
     end
 
-    copy_probabilities = zeros(rbm.n_classifiers)
+    log_denominator = logsumexp(class_probabilities)
 
-    for y_i in 1:rbm.n_classifiers
-        for y_j in 1:rbm.n_classifiers
-            copy_probabilities[y_i] += exp(class_probabilities[y_j] - class_probabilities[y_i])
-        end
-    end
-
-    copy_probabilities = 1 ./ copy_probabilities
-
-    return copy_probabilities
+    return exp.(class_probabilities .- log_denominator)
 end
 
 function reconstruct(rbm::AbstractRBM, v::Vector{T}) where {T <: Union{Int, Float64}}
