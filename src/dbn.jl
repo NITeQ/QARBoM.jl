@@ -103,3 +103,11 @@ function update_layer!(
     update_bottom_bias ? bottom_layer.bias .+= learning_rate .* (v_data .- fantasy_data.v) : nothing
     return top_layer.bias .+= learning_rate .* (h_data .- fantasy_data.h)
 end
+
+function classify(
+    dbn::DBN,
+    x,
+)
+    x = propagate_up(dbn, x, 1, length(dbn.layers))
+    return softmax(dbn.label.W * x .+ dbn.label.bias)
+end

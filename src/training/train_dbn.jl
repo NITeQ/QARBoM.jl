@@ -122,4 +122,64 @@ function pretrain_dbn!(
     end
 end
 
+function fine_tune_dbn!(
+    dbn::DBN,
+    x_train::Vector{Vector{Float64}},
+    y_train::Vector{Vector{Float64}};  # Supervised labels
+    learning_rate::Float64 = 0.1,
+    n_epochs::Int = 10,
+    batch_size::Int = 32,
+    evaluation_function::Function,
+    metrics::Any,
+)
+    if isnothing(dbn.label)
+        dbn.label = DBNLayer(
+            zeros(size(y_train[1]), size(dbn.layers[end].bias)),
+            zeros(size(y_train[1])),
+        )
+    end
+    # Define optimizer and other variables
+    mini_batches = _set_mini_batches(length(x_train), batch_size)
 
+    for epoch in 1:n_epochs
+        for mini_batch in mini_batches
+            # Mini-batch training
+            for idx in mini_batch
+                x = x_train[idx]
+                y_true = y_train[idx]
+
+                y_pred = classify(dbn, x)
+
+                # Backward pass (compute gradients)
+                dL_dy_pred = y_pred - y_true  # Gradient w.r.t. predicted labels (softmax)
+                dL_dW_label = h * dL_dy_pred'
+                dL_db_label = dL_dy_pred
+
+                # Gradient w.r.t. last hidden layer activations
+                dL_dh = dbn.label.W * dL_dy_pred
+
+                # Backpropagate through the hidden layers
+                for l in reverse(1:(length(dbn.layers)-1))
+                    # Gradient w.r.t. weights and biases
+                    dL_dW = x_train[idx] * dL_dh'
+                    dL_db = dL_dh
+
+                    # Update weights and biases
+                    dbn.layers[l].W .-= learning_rate * dL_dW
+                    dbn.layers[l].bias .-= learning_rate * dL_db
+
+                    # Propagate gradients down to previous layer
+                    dL_dh = dbn.layers[l].W * dL_dh
+                end
+
+                # Update label layer weights and biases
+                dbn.label.W .-= learning_rate * dL_dW_label
+                dbn.label.bias .-= learning_rate * dL_db_label
+
+                evaluation_function(dbn, epoch, metrics)
+
+                _log_metrics(metrics, epoch)
+            end
+        end
+    end
+end
