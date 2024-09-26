@@ -126,19 +126,19 @@ function fine_tune_dbn!(
     dbn::DBN,
     x_train::Vector{Vector{Float64}},
     y_train::Vector{Vector{Float64}};  # Supervised labels
-    learning_rate::Float64 = 0.1,
+    learning_rate::Vector{Float64},
     n_epochs::Int = 10,
     batch_size::Int = 32,
     evaluation_function::Function,
     metrics::Any,
 )
     if isnothing(dbn.label)
-        dbn.label = DBNLayer(
-            zeros(size(y_train[1]), size(dbn.layers[end].bias)),
-            zeros(size(y_train[1])),
+        dbn.label = LabelLayer(
+            randn(length(y_train[1]), length(dbn.layers[end].bias)),  # Initialize label layer weights
+            zeros(length(y_train[1])),  # Initialize label layer biases
         )
     end
-    # Define optimizer and other variables
+
     mini_batches = _set_mini_batches(length(x_train), batch_size)
 
     for epoch in 1:n_epochs
@@ -148,38 +148,43 @@ function fine_tune_dbn!(
                 x = x_train[idx]
                 y_true = y_train[idx]
 
-                y_pred = classify(dbn, x)
+                # Forward pass
+                top_layer = propagate_up(dbn, x, 1, length(dbn.layers))
+                y_pred = _softmax(dbn.label.W * top_layer .+ dbn.label.bias)
 
-                # Backward pass (compute gradients)
-                dL_dy_pred = y_pred - y_true  # Gradient w.r.t. predicted labels (softmax)
-                dL_dW_label = h * dL_dy_pred'
-                dL_db_label = dL_dy_pred
+                # Compute loss 
+                loss = cross_entropy_loss(y_true, y_pred)
 
-                # Gradient w.r.t. last hidden layer activations
-                dL_dh = dbn.label.W * dL_dy_pred
+                # Label layer gradient
+                δ_label = y_pred .- y_true
+                δ_W_label = δ_label * top_layer'
+                δ_bias_label = δ_label
 
-                # Backpropagate through the hidden layers
-                for l in reverse(1:(length(dbn.layers)-1))
-                    # Gradient w.r.t. weights and biases
-                    dL_dW = x_train[idx] * dL_dh'
-                    dL_db = dL_dh
+                # Update label layer
+                dbn.label.W .-= learning_rate[epoch] .* δ_W_label
+                dbn.label.bias .-= learning_rate[epoch] .* δ_bias_label
 
-                    # Update weights and biases
-                    dbn.layers[l].W .-= learning_rate * dL_dW
-                    dbn.layers[l].bias .-= learning_rate * dL_db
+                # Backpropagate the error through the hidden layers
+                δ_hidden = (dbn.label.W' * δ_label) .* _sigmoid_derivative.(top_layer)
 
-                    # Propagate gradients down to previous layer
-                    dL_dh = dbn.layers[l].W * dL_dh
+                # Update the weights and biases of the hidden layers
+                for i in length(dbn.layers):-1:2
+                    δ_W = propagate_down(dbn, top_layer, i, i - 1) * δ_hidden'
+                    δ_bias = δ_hidden
+                    i > 2 ? dbn.layers[i-1].W .-= learning_rate[epoch] .* δ_W : nothing
+                    dbn.layers[i].bias .-= learning_rate[epoch] .* δ_bias
+                    i > 2 ? δ_hidden = (dbn.layers[i-1].W * δ_hidden) .* _sigmoid_derivative.(propagate_down(dbn, top_layer, i, i - 1)) : nothing
+                    top_layer = propagate_down(dbn, top_layer, i, i - 1)
                 end
 
-                # Update label layer weights and biases
-                dbn.label.W .-= learning_rate * dL_dW_label
-                dbn.label.bias .-= learning_rate * dL_db_label
-
-                evaluation_function(dbn, epoch, metrics)
-
-                _log_metrics(metrics, epoch)
+                # Update the weights and biases of the visible layer
+                δ_W = x * δ_hidden'
+                δ_bias = (dbn.layers[1].W * δ_hidden) .* _sigmoid_derivative.(x)
+                dbn.layers[1].W .-= learning_rate[epoch] .* δ_W
+                dbn.layers[1].bias .-= learning_rate[epoch] .* δ_bias
             end
         end
+        evaluation_function(dbn, epoch, metrics)
+        _log_metrics(metrics, epoch)
     end
 end

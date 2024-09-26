@@ -1,11 +1,13 @@
 _sigmoid(x) = 1 / (1 + exp(-x))
-
+_sigmoid_derivative(x) = x .* (1.0 .- x)
 _relu(x::Float64) = max(0, x)
 
 function _softmax(x::Vector{T}) where {T <: Union{Int, Float64}}
     exp_x = exp.(x)
     return exp_x ./ sum(exp_x)
 end
+
+cross_entropy_loss(y_true::Vector{Float64}, y_pred::Vector{Float64}) = -sum(y_true .* log.(y_pred))
 
 num_visible_nodes(rbm::AbstractRBM) = rbm.n_visible
 num_hidden_nodes(rbm::AbstractRBM) = rbm.n_hidden
