@@ -120,7 +120,6 @@ function train_pcd!(
             evaluation_function = evaluation_function,
             learning_rate = learning_rate[epoch],
             metrics = metrics,
-            update_visible_bias = update_visible_bias,
         )
         println("Finished epoch $epoch")
 

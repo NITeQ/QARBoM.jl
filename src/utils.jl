@@ -7,8 +7,6 @@ function _softmax(x::Vector{T}) where {T <: Union{Int, Float64}}
     return exp_x ./ sum(exp_x)
 end
 
-cross_entropy_loss(y_true::Vector{Float64}, y_pred::Vector{Float64}) = -sum(y_true .* log.(y_pred))
-
 num_visible_nodes(rbm::AbstractRBM) = rbm.n_visible
 num_hidden_nodes(rbm::AbstractRBM) = rbm.n_hidden
 num_label_nodes(rbm::AbstractRBM) = rbm.n_classifiers
@@ -17,7 +15,8 @@ function _set_mini_batches(training_set_length::Int, batch_size::Int)
     n_batches = round(Int, training_set_length / batch_size)
     last_batch_size = training_set_length % batch_size
     if last_batch_size > 0
-        @warn "The last batch size is not equal to the batch size. Will dismiss $(last_batch_size) samples."
+        @warn "The last batch size is not equal to the other batches. Will dismiss $(last_batch_size) samples."
+        training_set_length -= last_batch_size
     end
     mini_batches = Vector{UnitRange{Int64}}(undef, n_batches)
     for i in 1:n_batches

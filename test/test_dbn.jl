@@ -55,4 +55,27 @@ end
     
     @test QARBoM.reconstruct(dbn, x, 3) == QARBoM._sigmoid.(biases[1])
     @test QARBoM.reconstruct(dbn, x, 2) == QARBoM._sigmoid.(biases[1])
+
+
+    layers_size = [3, 2, 2]
+    weights = [randn(3, 2), randn(2, 2)]
+    biases = [rand(3), rand(2), rand(2)]
+
+    dbn = QARBoM.initialize_dbn(layers_size, weights=weights, biases=biases)
+
+    x = rand(3)
+
+    pass_1 = QARBoM.propagate_up(dbn, x, 1, 2)
+    @test pass_1 == QARBoM._sigmoid.(weights[1]' * x .+ biases[2])
+    
+    pass_2 = QARBoM.propagate_up(dbn, pass_1, 2, 3)
+    @test pass_2 == QARBoM._sigmoid.(weights[2]' * pass_1 .+ biases[3])
+
+    pass_3 = QARBoM.propagate_down(dbn, pass_2, 3, 2)
+    @test pass_3 == QARBoM._sigmoid.(weights[2] * pass_2 .+ biases[2])
+
+    pass_4 = QARBoM.propagate_down(dbn, pass_3, 2, 1)   
+    @test pass_4 == QARBoM._sigmoid.(weights[1] * pass_3 .+ biases[1])
+
+    @test QARBoM.reconstruct(dbn, x, 3) == pass_4
 end

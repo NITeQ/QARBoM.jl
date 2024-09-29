@@ -85,7 +85,7 @@ function pretrain_dbn!(
     dbn::DBN,
     x_train;
     n_epochs::Vector{Int},
-    batch_size::Int,
+    batch_size::Vector{Int},
     learning_rate::Vector{Vector{Float64}},
     evaluation_function::Function,
     metrics::Any,
@@ -109,7 +109,7 @@ function pretrain_dbn!(
             l_i,
             new_x_train;
             n_epochs = n_epochs[l_i],
-            batch_size = batch_size,
+            batch_size = batch_size[l_i],
             learning_rate = learning_rate[l_i],
             update_bottom_layer = update_visible_bias,
             evaluation_function = evaluation_function,
@@ -117,6 +117,7 @@ function pretrain_dbn!(
         )
 
         if l_i < length(dbn.layers) - 1
+            println("Updating the input data for layer $(l_i+1)")
             new_x_train = [propagate_up(dbn.layers[l_i+1], dbn.layers[l_i], new_x_train[i]) for i in eachindex(new_x_train)]
         end
     end
@@ -151,9 +152,6 @@ function fine_tune_dbn!(
                 # Forward pass
                 top_layer = propagate_up(dbn, x, 1, length(dbn.layers))
                 y_pred = _softmax(dbn.label.W * top_layer .+ dbn.label.bias)
-
-                # Compute loss 
-                loss = cross_entropy_loss(y_true, y_pred)
 
                 # Label layer gradient
                 δ_label = y_pred .- y_true

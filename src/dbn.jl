@@ -22,6 +22,16 @@ mutable struct DBN
     label::Union{LabelLayer, Nothing}
 end
 
+function copy_dbn(dbn::DBN)
+    layers = Vector{DBNLayer}(undef, length(dbn.layers))
+    layers[1] = VisibleLayer(copy(dbn.layers[1].W), copy(dbn.layers[1].bias))
+    for i in 2:length(dbn.layers)-1
+        layers[i] = HiddenLayer(copy(dbn.layers[i].W), copy(dbn.layers[i].bias))
+    end
+    layers[end] = TopLayer(copy(dbn.layers[end].bias))
+    return DBN(layers, nothing)
+end
+
 function initialize_dbn(
     layers_size::Vector{Int};
     weights::Union{Vector{Matrix{Float64}}, Nothing} = nothing,

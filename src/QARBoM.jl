@@ -12,6 +12,7 @@ abstract type DBNLayer end
 export RBM, GRBM, RBMClassifier
 
 include("utils.jl")
+include("adam.jl")
 include("rbm.jl")
 include("gibbs.jl")
 include("qubo.jl")
