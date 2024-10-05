@@ -141,6 +141,29 @@ function update_layer!(
     bottom_layer::DBNLayer,
     v_data::Vector{Float64},
     h_data::Vector{Float64},
+    fantasy_data::FantasyData,
+    learning_rate::Float64,
+    label_learning_rate::Float64;
+    update_bottom_bias::Bool = false,
+    label_size::Int = 0,
+)
+    x_size = length(v_data) - label_size
+    top_layer.bias .+= learning_rate .* (h_data .- fantasy_data.h)
+    bottom_layer.W .+=
+        (vcat([learning_rate for i in 1:x_size], [label_learning_rate for i in 1:label_size]) .* v_data) * h_data' .-
+        (vcat([learning_rate for i in 1:x_size], [label_learning_rate for i in 1:label_size]) .* fantasy_data.v) * fantasy_data.h'
+    if update_bottom_bias
+        bottom_layer.bias[1:x_size] .+= learning_rate .* (v_data[1:x_size] .- fantasy_data.v[1:x_size])
+        bottom_layer.bias[x_size+1:end] .+= label_learning_rate .* (v_data[x_size+1:end] .- fantasy_data.v[x_size+1:end])
+    end
+    return nothing
+end
+
+function update_layer!(
+    top_layer::DBNLayer,
+    bottom_layer::DBNLayer,
+    v_data::Vector{Float64},
+    h_data::Vector{Float64},
     v_model::Vector{Float64},
     h_model::Vector{Float64},
     learning_rate::Float64;

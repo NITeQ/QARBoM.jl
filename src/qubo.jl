@@ -1,4 +1,4 @@
-function _create_qubo_model(bottom_layer::DBNLayer, top_layer::DBNLayer, sampler, model_setup)
+function _create_qubo_model(bottom_layer::DBNLayer, top_layer::DBNLayer, sampler, model_setup; label_size::Int = 0)
     model = Model(sampler)
     model_setup(model, sampler)
 
@@ -8,8 +8,14 @@ function _create_qubo_model(bottom_layer::DBNLayer, top_layer::DBNLayer, sampler
         @variable(model, vis[1:length(bottom_layer.bias)], Bin)
     end
 
-    @variable(model, hid[1:length(top_layer.bias)], Bin)
-    @objective(model, Min, -vis' * bottom_layer.W * hid)
+    if label_size > 0
+        @variable(model, label[1:label_size], Bin)
+        @variable(model, hid[1:length(top_layer.bias)], Bin)
+        @objective(model, Min, -vcat(vis, label)' * bottom_layer.W * hid)
+    else
+        @variable(model, hid[1:length(top_layer.bias)], Bin)
+        @objective(model, Min, -vis' * bottom_layer.W * hid)
+    end
 
     return model
 end
@@ -42,12 +48,21 @@ function _create_qubo_model(rbm::RBMClassifier, sampler, model_setup)
     return model
 end
 
-function _update_qubo_model!(model, bottom_layer::DBNLayer, top_layer::DBNLayer)
-    @objective(
-        model,
-        Min,
-        -model[:vis]' * bottom_layer.W * model[:hid] - bottom_layer.bias'model[:vis] - top_layer.bias'model[:hid]
-    )
+function _update_qubo_model!(model, bottom_layer::DBNLayer, top_layer::DBNLayer; label_size::Int = 0)
+    if label_size > 0
+        @objective(
+            model,
+            Min,
+            -vcat(model[:vis], model[:label])' * bottom_layer.W * model[:hid] - bottom_layer.bias'vcat(model[:vis], model[:label]) -
+            top_layer.bias'model[:hid]
+        )
+    else
+        @objective(
+            model,
+            Min,
+            -model[:vis]' * bottom_layer.W * model[:hid] - bottom_layer.bias'model[:vis] - top_layer.bias'model[:hid]
+        )
+    end
 end
 
 function _update_qubo_model!(model, rbm::AbstractRBM)
