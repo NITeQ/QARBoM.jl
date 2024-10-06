@@ -47,12 +47,13 @@ function persistent_qubo!(
     label,
     mini_batches::Vector{UnitRange{Int}};
     learning_rate::Float64 = 0.1,
+    label_learning_rate::Float64 = 0.1,
     update_bottom_bias::Bool = false,
 )
     total_t_sample, total_t_qs, total_t_update = 0.0, 0.0, 0.0
     for mini_batch in mini_batches
         t_qs = time()
-        v_model, h_model = _qubo_sample(model) # v~, h~
+        v_model, h_model = _qubo_sample(model; has_label = true) # v~, h~
         total_t_qs += time() - t_qs
         vis = vcat.(x[mini_batch], label[mini_batch])
         for sample in vis
@@ -70,8 +71,10 @@ function persistent_qubo!(
                 h_data,
                 v_model,
                 h_model,
-                (learning_rate / length(mini_batch));
+                (learning_rate / length(mini_batch)),
+                label_learning_rate / length(mini_batch);
                 update_bottom_bias = update_bottom_bias,
+                label_size = length(label[1]),
             )
             total_t_update += time() - t_update
         end
@@ -319,6 +322,7 @@ function train_layer!(
     n_epochs::Int,
     batch_size::Int,
     learning_rate::Vector{Float64},
+    label_learning_rate::Vector{Float64},
     update_bottom_layer::Bool = false,
     evaluation_function::Function,
     metrics::Any,
@@ -344,8 +348,10 @@ function train_layer!(
             bottom_layer,
             qubo_model,
             x_train,
+            label_train,
             mini_batches;
             learning_rate = learning_rate[epoch],
+            label_learning_rate = label_learning_rate[epoch],
             update_bottom_bias = update_bottom_layer,
         )
         _log_epoch_quantum(epoch, t_sample, t_qs, t_update, t_sample + t_qs + t_update)
@@ -430,7 +436,7 @@ function pretrain_dbn!(
             if length(dbn.layers[l_i-1].bias) == length(dbn.layers[l_i+1].bias)
                 println("Warm starting the weights between layers $l_i and $(l_i+1)")
                 dbn.layers[l_i].W = Matrix(copy(dbn.layers[l_i-1].W'))
-                dbn.layers[l_i+1].bias = copy(dbn.layers[l_i-1].bias)
+                # dbn.layers[l_i+1].bias = copy(dbn.layers[l_i-1].bias)
             end
         end
 
