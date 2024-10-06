@@ -1,5 +1,5 @@
 function _create_qubo_model(bottom_layer::DBNLayer, top_layer::DBNLayer, sampler, model_setup; label_size::Int = 0)
-    model = Model(sampler)
+    model = Model(() -> ToQUBO.Optimizer(sampler))
     model_setup(model, sampler)
 
     if label_size > 0
