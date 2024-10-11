@@ -1,6 +1,5 @@
 function _create_qubo_model(bottom_layer::DBNLayer, top_layer::DBNLayer, sampler, model_setup; label_size::Int = 0)
     model = Model(() -> ToQUBO.Optimizer(sampler))
-    model_setup(model, sampler)
 
     if label_size > 0
         x_size = length(bottom_layer.bias) - label_size
@@ -11,7 +10,7 @@ function _create_qubo_model(bottom_layer::DBNLayer, top_layer::DBNLayer, sampler
         end
         @variable(model, label[1:label_size], Bin)
         @variable(model, hid[1:length(top_layer.bias)], Bin)
-        @objective(model, Min, -vcat(vis, label)' * bottom_layer.W * hid)
+        @objective(model, Min, -vcat(vis, label)' * bottom_layer.W * hid - bottom_layer.bias'vcat(vis, label) - top_layer.bias'hid)
     else
         if bottom_layer isa GaussianVisibleLayer
             @variable(model, bottom_layer.min_visible[i] <= vis[i = 1:length(bottom_layer.bias)] <= bottom_layer.max_visible[i])
@@ -19,9 +18,10 @@ function _create_qubo_model(bottom_layer::DBNLayer, top_layer::DBNLayer, sampler
             @variable(model, vis[1:length(bottom_layer.bias)], Bin)
         end
         @variable(model, hid[1:length(top_layer.bias)], Bin)
-        @objective(model, Min, -vis' * bottom_layer.W * hid)
+        @objective(model, Min, -vis' * bottom_layer.W * hid - bottom_layer.bias'vis - top_layer.bias'hid)
     end
 
+    model_setup(model, sampler)
     return model
 end
 
