@@ -1,7 +1,3 @@
-abstract type TrainingMethod end
-abstract type QSampling <: TrainingMethod end
-abstract type PCD <: TrainingMethod end
-
 mutable struct VisibleLayer <: DBNLayer
     W::Matrix{Float64}
     bias::Vector{Float64}

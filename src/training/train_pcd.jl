@@ -8,7 +8,6 @@ function persistent_contrastive_divergence!(
     learning_rate::Float64 = 0.1,
     evaluation_function::Union{Function, Nothing} = nothing,
     metrics = nothing,
-    update_visible_bias::Bool = true,
 )
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     for mini_batch in mini_batches
@@ -50,19 +49,19 @@ end
 function persistent_contrastive_divergence!(
     rbm::RBMClassifier,
     x,
-    epoch::Int,
+    label,
     mini_batches::Vector{UnitRange{Int}},
     fantasy_data::Vector{FantasyDataClassifier};
     learning_rate::Float64 = 0.1,
-    evaluation_function::Function,
-    metrics,
+    label_learning_rate::Float64 = 0.1,
 )
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     for mini_batch in mini_batches
         batch_index = 1
-        for sample in x[mini_batch]
+        for sample_i in eachindex(mini_batch)
             t_sample = time()
-            v_data, y_data = sample # training visible
+            v_data = x[sample_i]
+            y_data = label[sample_i]
             h_data = conditional_prob_h(rbm, v_data, y_data) # hidden from training visible
             total_t_sample += time() - t_sample
 
@@ -77,12 +76,10 @@ function persistent_contrastive_divergence!(
                 fantasy_data[batch_index].h,
                 fantasy_data[batch_index].y,
                 (learning_rate / length(mini_batch)),
+                (label_learning_rate / length(mini_batch)),
             )
             total_t_update += time() - t_update
 
-            if !isnothing(evaluation_function)
-                evaluation_function(rbm, sample, metrics, epoch)
-            end
             batch_index += 1
         end
 
@@ -102,7 +99,6 @@ function train_pcd!(
     learning_rate::Vector{Float64},
     evaluation_function::Union{Function, Nothing} = nothing,
     metrics = nothing,
-    update_visible_bias::Bool = true,
 )
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     println("Setting mini-batches")
@@ -126,6 +122,54 @@ function train_pcd!(
         total_t_sample += t_sample
         total_t_gibbs += t_gibbs
         total_t_update += t_update
+
+        if !isnothing(evaluation_function)
+            _log_epoch(epoch, t_sample, t_gibbs, t_update, total_t_sample + total_t_gibbs + total_t_update)
+            _log_metrics(metrics, epoch)
+        end
+    end
+
+    _log_finish(n_epochs, total_t_sample, total_t_gibbs, total_t_update)
+
+    return
+end
+
+function train_pcd!(
+    rbm::RBMClassifier,
+    x_train,
+    label_train;
+    n_epochs::Int,
+    batch_size::Int,
+    learning_rate::Vector{Float64},
+    label_learning_rate::Vector{Float64},
+    evaluation_function::Union{Function, Nothing} = nothing,
+    metrics = nothing,
+)
+    total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
+    println("Setting mini-batches")
+    mini_batches = _set_mini_batches(length(x_train) + length(label_train), batch_size)
+    fantasy_data = _init_fantasy_data(rbm, batch_size)
+    println("Starting training")
+
+    for epoch in 1:n_epochs
+        t_sample, t_gibbs, t_update = persistent_contrastive_divergence!(
+            rbm,
+            x_train,
+            label_train,
+            mini_batches,
+            fantasy_data;
+            learning_rate = learning_rate[epoch],
+            label_learning_rate = label_learning_rate[epoch],
+        )
+        println("Finished epoch $epoch")
+
+        total_t_sample += t_sample
+        total_t_gibbs += t_gibbs
+        total_t_update += t_update
+
+        if !isnothing(evaluation_function)
+            evaluation_function(rbm, metrics, epoch)
+        end
 
         if !isnothing(evaluation_function)
             _log_epoch(epoch, t_sample, t_gibbs, t_update, total_t_sample + total_t_gibbs + total_t_update)

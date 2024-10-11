@@ -106,12 +106,13 @@ function update_rbm!(
     h_model::Vector{Float64},
     y_model::Vector{Float64},
     learning_rate::Float64,
+    label_learning_rate::Float64,
 ) where {T <: Union{Vector{Int}, Vector{Float64}}}
     rbm.W .+= learning_rate .* (v_data * h_data' .- v_model * h_model')
     rbm.a .+= learning_rate .* (v_data .- v_model)
     rbm.b .+= learning_rate .* (h_data .- h_model)
-    rbm.U .+= learning_rate .* (y_data * h_data' .- y_model * h_model')
-    rbm.c .+= learning_rate .* (y_data .- y_model)
+    rbm.U .+= label_learning_rate .* (y_data * h_data' .- y_model * h_model')
+    rbm.c .+= label_learning_rate .* (y_data .- y_model)
     return
 end
 
