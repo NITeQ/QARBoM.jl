@@ -178,16 +178,13 @@ end
 function train_layer!(
     dbn::DBN,
     layer_index::Int,
-    x_train,
-    ::Type{PCD};
+    x_train;
     n_epochs::Int,
     batch_size::Int,
     learning_rate::Vector{Float64},
     update_bottom_layer::Bool = false,
     evaluation_function::Function,
     metrics::Any,
-    sampler = nothing,
-    model_setup = nothing,
 )
     top_layer = dbn.layers[layer_index+1]
     bottom_layer = dbn.layers[layer_index]
@@ -367,15 +364,12 @@ end
 
 function pretrain_dbn!(
     dbn::DBN,
-    x_train,
-    methods::Array{DataType, 1};
+    x_train;
     n_epochs::Vector{Int},
     batch_size::Vector{Int},
     learning_rate::Vector{Vector{Float64}},
     evaluation_function::Function,
     metrics::Any,
-    sampler = nothing,
-    model_setup = nothing,
 )
     new_x_train = copy(x_train)
     for l_i in 1:(length(dbn.layers)-1)
@@ -402,8 +396,6 @@ function pretrain_dbn!(
             update_bottom_layer = update_visible_bias,
             evaluation_function = evaluation_function,
             metrics = metrics,
-            sampler = sampler,
-            model_setup = model_setup,
         )
 
         if l_i < length(dbn.layers) - 1

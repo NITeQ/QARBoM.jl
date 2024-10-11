@@ -1,17 +1,6 @@
-abstract type TrainingMethod end
-abstract type QSampling <: TrainingMethod end
-abstract type PCD <: TrainingMethod end
-
 mutable struct VisibleLayer <: DBNLayer
     W::Matrix{Float64}
     bias::Vector{Float64}
-end
-
-mutable struct GaussianVisibleLayer <: DBNLayer
-    W::Matrix{Float64}
-    bias::Vector{Float64}
-    max_visible::Vector{Float64}
-    min_visible::Vector{Float64}
 end
 
 mutable struct HiddenLayer <: DBNLayer
@@ -28,7 +17,7 @@ mutable struct LabelLayer <: DBNLayer
     bias::Vector{Float64}
 end
 
-mutable struct DBN <: AbstractDBN
+mutable struct DBN
     layers::Vector{DBNLayer}
     label::Union{LabelLayer, Nothing}
 end
@@ -47,22 +36,12 @@ function initialize_dbn(
     layers_size::Vector{Int};
     weights::Union{Vector{Matrix{Float64}}, Nothing} = nothing,
     biases::Union{Vector{Vector{Float64}}, Nothing} = nothing,
-    max_visible::Union{Vector{Float64}, Nothing} = nothing,
-    min_visible::Union{Vector{Float64}, Nothing} = nothing,
 )
     layers = Vector{DBNLayer}()
     for i in 1:length(layers_size)-1
         W = isnothing(weights) ? randn(layers_size[i], layers_size[i+1]) : weights[i]
         bias = isnothing(biases) ? zeros(layers_size[i]) : biases[i]
-        if i == 1
-            if isnothing(max_visible) && isnothing(min_visible)
-                push!(layers, VisibleLayer(W, bias))
-            else
-                push!(layers, GaussianVisibleLayer(W, bias, max_visible, min_visible))
-            end
-        else
-            push!(layers, HiddenLayer(W, bias))
-        end
+        i == 1 ? push!(layers, VisibleLayer(W, bias)) : push!(layers, HiddenLayer(W, bias))
     end
 
     bias = isnothing(biases) ? zeros(layers_size[end]) : biases[end]
