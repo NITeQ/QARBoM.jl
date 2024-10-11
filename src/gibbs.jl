@@ -1,52 +1,52 @@
 
 # Gibbs sampling
-gibbs_sample_hidden(rbm::AbstractRBM, v::Vector{T}) where {T <: Union{Int, Float64}} =
-    [rand() < _prob_h_given_v(rbm, h_i, v) ? 1 : 0 for h_i in 1:num_hidden_nodes(rbm)]
-gibbs_sample_hidden(
-    rbm::AbstractRBM,
-    v::Vector{T},
-    W_fast::Matrix{Float64},
-    b_fast::Vector{Float64},
-) where {T <: Union{Int, Float64}} = [
-    rand() < _prob_h_given_v(rbm, W_fast, b_fast, h_i, v) ? 1 : 0 for
-    h_i in 1:num_hidden_nodes(rbm)
-]
-gibbs_sample_visible(rbm::AbstractRBM, h::Vector{T}) where {T <: Union{Int, Float64}} =
-    [rand() < _prob_v_given_h(rbm, v_i, h) ? 1 : 0 for v_i in 1:num_visible_nodes(rbm)]
-gibbs_sample_visible(
-    rbm::AbstractRBM,
-    h::Vector{T},
-    W_fast::Matrix{Float64},
-    a_fast::Vector{Float64},
-) where {T <: Union{Int, Float64}} = [
-    rand() < _prob_v_given_h(rbm, W_fast, a_fast, v_i, h) ? 1 : 0 for
-    v_i in 1:num_visible_nodes(rbm)
-]
+function gibbs_sample_hidden(rbm::AbstractRBM, v::Vector{T}) where {T <: Union{Int, Float64}}
+    probs = conditional_prob_h(rbm, v)
+    return [rand() < p ? 1 : 0 for p in probs]
+end
+
+function gibbs_sample_hidden(rbm::AbstractRBM, v::Vector{T}, W_fast::Matrix{Float64}, b_fast::Vector{Float64}) where {T <: Union{Int, Float64}}
+    probs = conditional_prob_h(rbm, v, W_fast, b_fast)
+    return [rand() < p ? 1 : 0 for p in probs]
+end
+
+function gibbs_sample_visible(rbm::AbstractRBM, h::Vector{T}) where {T <: Union{Int, Float64}}
+    probs = conditional_prob_v(rbm, h)
+    return [rand() < p ? 1 : 0 for p in probs]
+end
+
+function gibbs_sample_visible(rbm::AbstractRBM, h::Vector{T}, W_fast::Matrix{Float64}, a_fast::Vector{Float64}) where {T <: Union{Int, Float64}}
+    probs = conditional_prob_v(rbm, h, W_fast, a_fast)
+    return [rand() < p ? 1 : 0 for p in probs]
+end
+
 # for classification
-gibbs_sample_hidden(rbm::RBMClassifier, v::Vector{T}, y::Vector{T}) where {T <: Union{Int, Float64}} =
-    [rand() < _prob_h_given_vy(rbm, h_i, v, y) ? 1 : 0 for h_i in 1:num_hidden_nodes(rbm)]
-gibbs_sample_hidden(
+
+function gibbs_sample_hidden(rbm::RBMClassifier, v::Vector{T}, y::Vector{T}) where {T <: Union{Int, Float64}}
+    probs = conditional_prob_h(rbm, v, y)
+    return [rand() < p ? 1 : 0 for p in probs]
+end
+
+function gibbs_sample_hidden(
     rbm::RBMClassifier,
     v::Vector{T},
     y::Vector{T},
     W_fast::Matrix{Float64},
     U_fast::Matrix{Float64},
     b_fast::Vector{Float64},
-) where {T <: Union{Int, Float64}} = [
-    rand() < _prob_h_given_vy(rbm, W_fast, U_fast, b_fast, h_i, v, y) ? 1 : 0 for
-    h_i in 1:num_hidden_nodes(rbm)
-]
-
-gibbs_sample_label(rbm::RBMClassifier, h::Vector{T}) where {T <: Union{Int, Float64}} =
-    [rand() < _prob_y_given_h(rbm, y_i, h) ? 1 : 0 for y_i in 1:num_label_nodes(rbm)]
-function gibbs_sample_label(
-    rbm::RBMClassifier,
-    h::Vector{T},
-    W_fast::Matrix{Float64},
-    c_fast::Vector{Float64},
 ) where {T <: Union{Int, Float64}}
-    return [rand() < _prob_y_given_h(rbm, y_i, h, W_fast, c_fast) ? 1 : 0 for y_i in 1:num_label_nodes(rbm)
-    ]
+    probs = conditional_prob_h(rbm, v, y, W_fast, U_fast, b_fast)
+    return [rand() < p ? 1 : 0 for p in probs]
+end
+
+function gibbs_sample_label(rbm::RBMClassifier, h::Vector{T}) where {T <: Union{Int, Float64}}
+    probs = conditional_prob_y_given_h(rbm, h)
+    return [rand() < p ? 1 : 0 for p in probs]
+end
+
+function gibbs_sample_label(rbm::RBMClassifier, h::Vector{T}, W_fast::Matrix{Float64}, c_fast::Vector{Float64}) where {T <: Union{Int, Float64}}
+    probs = conditional_prob_y_given_h(rbm, h, W_fast, c_fast)
+    return [rand() < p ? 1 : 0 for p in probs]
 end
 
 # Estimates v~ from the RBM model using the Contrastive Divergence algorithm
