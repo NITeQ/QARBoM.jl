@@ -1,6 +1,17 @@
+abstract type TrainingMethod end
+abstract type QSampling <: TrainingMethod end
+abstract type PCD <: TrainingMethod end
+
 mutable struct VisibleLayer <: DBNLayer
     W::Matrix{Float64}
     bias::Vector{Float64}
+end
+
+mutable struct GaussianVisibleLayer <: DBNLayer
+    W::Matrix{Float64}
+    bias::Vector{Float64}
+    max_visible::Vector{Float64}
+    min_visible::Vector{Float64}
 end
 
 mutable struct HiddenLayer <: DBNLayer
@@ -17,7 +28,7 @@ mutable struct LabelLayer <: DBNLayer
     bias::Vector{Float64}
 end
 
-mutable struct DBN
+mutable struct DBN <: AbstractDBN
     layers::Vector{DBNLayer}
     label::Union{LabelLayer, Nothing}
 end
@@ -36,12 +47,22 @@ function initialize_dbn(
     layers_size::Vector{Int};
     weights::Union{Vector{Matrix{Float64}}, Nothing} = nothing,
     biases::Union{Vector{Vector{Float64}}, Nothing} = nothing,
+    max_visible::Union{Vector{Float64}, Nothing} = nothing,
+    min_visible::Union{Vector{Float64}, Nothing} = nothing,
 )
     layers = Vector{DBNLayer}()
     for i in 1:length(layers_size)-1
         W = isnothing(weights) ? randn(layers_size[i], layers_size[i+1]) : weights[i]
         bias = isnothing(biases) ? zeros(layers_size[i]) : biases[i]
-        i == 1 ? push!(layers, VisibleLayer(W, bias)) : push!(layers, HiddenLayer(W, bias))
+        if i == 1
+            if isnothing(max_visible) && isnothing(min_visible)
+                push!(layers, VisibleLayer(W, bias))
+            else
+                push!(layers, GaussianVisibleLayer(W, bias, max_visible, min_visible))
+            end
+        else
+            push!(layers, HiddenLayer(W, bias))
+        end
     end
 
     bias = isnothing(biases) ? zeros(layers_size[end]) : biases[end]
@@ -111,7 +132,71 @@ function update_layer!(
 )
     bottom_layer.W .+= learning_rate .* (v_data * h_data' .- fantasy_data.v * fantasy_data.h')
     update_bottom_bias ? bottom_layer.bias .+= learning_rate .* (v_data .- fantasy_data.v) : nothing
-    return top_layer.bias .+= learning_rate .* (h_data .- fantasy_data.h)
+    top_layer.bias .+= learning_rate .* (h_data .- fantasy_data.h)
+    return nothing
+end
+
+function update_layer!(
+    top_layer::DBNLayer,
+    bottom_layer::DBNLayer,
+    v_data::Vector{Float64},
+    h_data::Vector{Float64},
+    fantasy_data::FantasyData,
+    learning_rate::Float64,
+    label_learning_rate::Float64;
+    update_bottom_bias::Bool = false,
+    label_size::Int = 0,
+)
+    x_size = length(v_data) - label_size
+    top_layer.bias .+= learning_rate .* (h_data .- fantasy_data.h)
+    bottom_layer.W .+=
+        (vcat([learning_rate for i in 1:x_size], [label_learning_rate for i in 1:label_size]) .* v_data) * h_data' .-
+        (vcat([learning_rate for i in 1:x_size], [label_learning_rate for i in 1:label_size]) .* fantasy_data.v) * fantasy_data.h'
+    if update_bottom_bias
+        bottom_layer.bias[1:x_size] .+= learning_rate .* (v_data[1:x_size] .- fantasy_data.v[1:x_size])
+        bottom_layer.bias[x_size+1:end] .+= label_learning_rate .* (v_data[x_size+1:end] .- fantasy_data.v[x_size+1:end])
+    end
+    return nothing
+end
+
+function update_layer!(
+    top_layer::DBNLayer,
+    bottom_layer::DBNLayer,
+    v_data::Vector{Float64},
+    h_data::Vector{Float64},
+    v_model::Vector{Float64},
+    h_model::Vector{Float64},
+    learning_rate::Float64;
+    update_bottom_bias::Bool = false,
+)
+    bottom_layer.W .+= learning_rate .* (v_data * h_data' .- v_model * h_model')
+    update_bottom_bias ? bottom_layer.bias .+= learning_rate .* (v_data .- v_model) : nothing
+    top_layer.bias .+= learning_rate .* (h_data .- h_model)
+    return nothing
+end
+
+function update_layer!(
+    top_layer::DBNLayer,
+    bottom_layer::DBNLayer,
+    v_data::Vector{Float64},
+    h_data::Vector{Float64},
+    v_model::Vector{Float64},
+    h_model::Vector{Float64},
+    learning_rate::Float64,
+    label_learning_rate::Float64;
+    update_bottom_bias::Bool = false,
+    label_size::Int = 0,
+)
+    x_size = length(v_data) - label_size
+    top_layer.bias .+= learning_rate .* (h_data .- h_model)
+    bottom_layer.W .+=
+        (vcat([learning_rate for i in 1:x_size], [label_learning_rate for i in 1:label_size]) .* v_data) * h_data' .-
+        (vcat([learning_rate for i in 1:x_size], [label_learning_rate for i in 1:label_size]) .* v_model) * h_model'
+    if update_bottom_bias
+        bottom_layer.bias[1:x_size] .+= learning_rate .* (v_data[1:x_size] .- v_model[1:x_size])
+        bottom_layer.bias[x_size+1:end] .+= label_learning_rate .* (v_data[x_size+1:end] .- v_model[x_size+1:end])
+    end
+    return nothing
 end
 
 function classify(

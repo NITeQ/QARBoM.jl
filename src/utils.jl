@@ -17,6 +17,7 @@ function _set_mini_batches(training_set_length::Int, batch_size::Int)
     if last_batch_size > 0
         @warn "The last batch size is not equal to the other batches. Will dismiss $(last_batch_size) samples."
         training_set_length -= last_batch_size
+        n_batches = round(Int, training_set_length / batch_size)
     end
     mini_batches = Vector{UnitRange{Int64}}(undef, n_batches)
     for i in 1:n_batches
