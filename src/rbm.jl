@@ -198,3 +198,7 @@ function classify(rbm::RBMClassifier, v::Vector{T}) where {T <: Union{Int, Float
     y = conditional_prob_y_given_v(rbm, v)
     return y
 end
+
+function copy_rbm(rbm::AbstractRBM)
+    return RBM(copy(rbm.W), copy(rbm.a), copy(rbm.b), rbm.n_visible, rbm.n_hidden)
+end

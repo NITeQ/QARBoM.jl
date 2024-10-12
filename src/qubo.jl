@@ -43,10 +43,17 @@ function _create_qubo_model(rbm::GRBM, sampler, model_setup)
     return model
 end
 
-function _create_qubo_model(rbm::RBMClassifier, sampler, model_setup)
+function _create_qubo_model(rbm::RBMClassifier, sampler, model_setup; kwargs...)
+    max_visible = get(kwargs, :max_visible, nothing)
+    min_visible = get(kwargs, :min_visible, nothing)
+
     model = Model(() -> ToQUBO.Optimizer(sampler))
     model_setup(model, sampler)
-    @variable(model, rbm.min_visible[i] <= vis[i = 1:rbm.n_visible] <= rbm.max_visible[i])
+    if !isnothing(max_visible) && !isnothing(min_visible)
+        @variable(model, min_visible[i] <= vis[i = 1:rbm.n_visible] <= max_visible[i])
+    else
+        @variable(model, vis[1:rbm.n_visible], Bin)
+    end
     @variable(model, label[1:rbm.n_classifiers], Bin)
     @variable(model, hid[1:rbm.n_hidden], Bin)
     @objective(model, Min, -vis' * rbm.W * hid - label' * rbm.U * hid)
@@ -173,9 +180,11 @@ function persistent_qubo!(
     rbm::RBMClassifier,
     model,
     x,
+    label,
     epoch::Int,
     mini_batches::Vector{UnitRange{Int}};
     learning_rate::Float64 = 0.1,
+    label_learning_rate::Float64 = 0.1,
     evaluation_function::Function,
     metrics::Any,
 )
@@ -184,9 +193,10 @@ function persistent_qubo!(
         t_qs = time()
         v_model, h_model, label_model = _qubo_sample(rbm, model) # v~, h~
         total_t_qs += time() - t_qs
-        for sample in x[mini_batch]
+        for sample_i in eachindex(mini_batch)
             t_sample = time()
-            v_data, label_data = sample # training visible
+            v_data = x[sample_i]
+            label_data = label[sample_i]
             h_data = conditional_prob_h(rbm, v_data, label_data) # hidden from training visible
             total_t_sample += time() - t_sample
 
@@ -201,10 +211,9 @@ function persistent_qubo!(
                 h_model,
                 label_model,
                 (learning_rate / length(mini_batch)),
+                (label_learning_rate / length(mini_batch)),
             )
             total_t_update += time() - t_update
-
-            evaluation_function(rbm, sample, metrics, epoch)
         end
         t_update = time()
         _update_qubo_model!(model, rbm)

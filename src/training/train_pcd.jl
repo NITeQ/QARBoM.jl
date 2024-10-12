@@ -137,7 +137,8 @@ end
 function train_pcd!(
     rbm::RBMClassifier,
     x_train,
-    label_train;
+    label_train,
+    ::Type{PCD};
     n_epochs::Int,
     batch_size::Int,
     learning_rate::Vector{Float64},
@@ -145,6 +146,7 @@ function train_pcd!(
     evaluation_function::Union{Function, Nothing} = nothing,
     metrics = nothing,
 )
+    best_rbm = copy_rbm(rbm)
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     println("Setting mini-batches")
     mini_batches = _set_mini_batches(length(x_train) + length(label_train), batch_size)
