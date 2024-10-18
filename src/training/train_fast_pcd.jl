@@ -133,9 +133,10 @@ function fast_persistent_contrastive_divergence!(
     return total_t_sample, total_t_gibbs, total_t_update
 end
 
-function train_fast_pcd!(
+function train!(
     rbm::AbstractRBM,
-    x_train;
+    x_train,
+    ::Type{FastPCD};
     n_epochs::Int,
     batch_size::Int,
     learning_rate::Vector{Float64},

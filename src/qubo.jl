@@ -25,19 +25,17 @@ function _create_qubo_model(bottom_layer::DBNLayer, top_layer::DBNLayer, sampler
     return model
 end
 
-function _create_qubo_model(rbm::RBM, sampler, model_setup)
+function _create_qubo_model(rbm::RBM, sampler, model_setup; kwargs...)
+    max_visible = get(kwargs, :max_visible, nothing)
+    min_visible = get(kwargs, :min_visible, nothing)
+
     model = Model(sampler)
     model_setup(model, sampler)
-    @variable(model, vis[1:rbm.n_visible], Bin)
-    @variable(model, hid[1:rbm.n_hidden], Bin)
-    @objective(model, Min, -vis' * rbm.W * hid)
-    return model
-end
-
-function _create_qubo_model(rbm::GRBM, sampler, model_setup)
-    model = Model(() -> ToQUBO.Optimizer(sampler))
-    model_setup(model, sampler)
-    @variable(model, rbm.min_visible[i] <= vis[i = 1:rbm.n_visible] <= rbm.max_visible[i])
+    if !isnothing(max_visible) && !isnothing(min_visible)
+        @variable(model, min_visible[i] <= vis[i = 1:rbm.n_visible] <= max_visible[i])
+    else
+        @variable(model, vis[1:rbm.n_visible], Bin)
+    end
     @variable(model, hid[1:rbm.n_hidden], Bin)
     @objective(model, Min, -vis' * rbm.W * hid)
     return model

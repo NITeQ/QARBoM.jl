@@ -91,7 +91,7 @@ function persistent_contrastive_divergence!(
     return total_t_sample, total_t_gibbs, total_t_update
 end
 
-function train_pcd!(
+function train!(
     rbm::AbstractRBM,
     x_train;
     n_epochs::Int,
@@ -134,7 +134,7 @@ function train_pcd!(
     return
 end
 
-function train_pcd!(
+function train!(
     rbm::RBMClassifier,
     x_train,
     label_train,

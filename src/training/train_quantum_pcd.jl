@@ -1,6 +1,7 @@
-function train_persistent_qubo!(
+function train!(
     rbm::AbstractRBM,
-    x_train;
+    x_train,
+    ::Type{QSampling};
     n_epochs::Int,
     batch_size::Int,
     learning_rate::Vector{Float64},
@@ -8,9 +9,10 @@ function train_persistent_qubo!(
     sampler,
     evaluation_function::Function,
     metrics::Any,
+    kwargs...,
 )
     println("Setting up QUBO model")
-    qubo_model = _create_qubo_model(rbm, sampler, model_setup)
+    qubo_model = _create_qubo_model(rbm, sampler, model_setup; kwargs...)
     total_t_sample, total_t_qs, total_t_update = 0.0, 0.0, 0.0
     println("Setting mini-batches")
     mini_batches = _set_mini_batches(length(x_train), batch_size)
@@ -41,7 +43,7 @@ function train_persistent_qubo!(
     return
 end
 
-function train_pcd!(
+function train!(
     rbm::RBMClassifier,
     x_train,
     label_train,
