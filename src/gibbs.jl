@@ -57,3 +57,12 @@ function _get_v_model(rbm::AbstractRBM, v::Vector{<:Number}, n_gibbs::Int)
     end
     return v
 end
+
+function _get_v_y_model(rbm::AbstractRBM, v::Vector{<:Number}, y::Vector{<:Number}, n_gibbs::Int)
+    for _ in 1:n_gibbs
+        h = gibbs_sample_hidden(rbm, v, y)
+        v = gibbs_sample_visible(rbm, h)
+        y = gibbs_sample_label(rbm, h)
+    end
+    return v, y
+end
