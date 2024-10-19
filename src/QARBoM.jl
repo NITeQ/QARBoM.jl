@@ -5,6 +5,8 @@ using Statistics
 using JuMP
 using ToQUBO
 using LogExpFunctions
+using CSV
+using DataFrames
 
 abstract type TrainingMethod end
 abstract type QSampling <: TrainingMethod end
@@ -20,8 +22,8 @@ export RBM, RBMClassifier
 export QSampling, PCD, CD, FastPCD
 
 include("utils.jl")
-include("adam.jl")
 include("rbm.jl")
+include("evaluation.jl")
 include("gibbs.jl")
 include("qubo.jl")
 include("fantasy_data.jl")
