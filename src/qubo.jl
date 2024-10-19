@@ -191,7 +191,7 @@ function persistent_qubo!(
         t_qs = time()
         v_model, h_model, label_model = _qubo_sample(rbm, model) # v~, h~
         total_t_qs += time() - t_qs
-        for sample_i in eachindex(mini_batch)
+        for sample_i in mini_batch
             t_sample = time()
             v_data = x[sample_i]
             label_data = label[sample_i]
