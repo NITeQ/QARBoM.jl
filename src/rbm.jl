@@ -176,3 +176,28 @@ end
 function copy_rbm(rbm::AbstractRBM)
     return RBM(copy(rbm.W), copy(rbm.a), copy(rbm.b), rbm.n_visible, rbm.n_hidden)
 end
+
+function copy_rbm!(rbm_src::AbstractRBM, rbm_target::AbstractRBM)
+    rbm_target.W .= rbm_src.W
+    rbm_target.a .= rbm_src.a
+    rbm_target.b .= rbm_src.b
+    rbm_target.n_visible = rbm_src.n_visible
+    rbm_target.n_hidden = rbm_src.n_hidden
+    return
+end
+
+function copy_rbm(rbm::RBMClassifier)
+    return RBMClassifier(copy(rbm.W), copy(rbm.U), copy(rbm.a), copy(rbm.b), copy(rbm.c), rbm.n_visible, rbm.n_hidden, rbm.n_classifiers)
+end
+
+function copy_rbm!(rbm_src::RBMClassifier, rbm_target::RBMClassifier)
+    rbm_target.W .= rbm_src.W
+    rbm_target.U .= rbm_src.U
+    rbm_target.a .= rbm_src.a
+    rbm_target.b .= rbm_src.b
+    rbm_target.c .= rbm_src.c
+    rbm_target.n_visible = rbm_src.n_visible
+    rbm_target.n_hidden = rbm_src.n_hidden
+    rbm_target.n_classifiers = rbm_src.n_classifiers
+    return
+end
