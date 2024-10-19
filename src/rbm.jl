@@ -73,15 +73,15 @@ end
 
 function update_rbm!(
     rbm::RBMClassifier,
-    v_data::T,
-    h_data::Vector{Float64},
-    y_data::Vector{Float64},
-    v_model::Vector{Float64},
-    h_model::Vector{Float64},
-    y_model::Vector{Float64},
+    v_data::Vector{<:Number},
+    h_data::Vector{<:Number},
+    y_data::Vector{<:Number},
+    v_model::Vector{<:Number},
+    h_model::Vector{<:Number},
+    y_model::Vector{<:Number},
     learning_rate::Float64,
     label_learning_rate::Float64,
-) where {T <: Union{Vector{Int}, Vector{Float64}}}
+)
     rbm.W .+= learning_rate .* (v_data * h_data' .- v_model * h_model')
     rbm.a .+= learning_rate .* (v_data .- v_model)
     rbm.b .+= learning_rate .* (h_data .- h_model)
@@ -92,41 +92,41 @@ end
 
 function update_rbm!(
     rbm::AbstractRBM,
-    v_data::T,
-    h_data::Vector{Float64},
-    v_model::Vector{Float64},
-    h_model::Vector{Float64},
+    v_data::Vector{<:Number},
+    h_data::Vector{<:Number},
+    v_model::Vector{<:Number},
+    h_model::Vector{<:Number},
     learning_rate::Float64;
     update_visible_bias::Bool = true,
-) where {T <: Union{Vector{Int}, Vector{Float64}}}
+)
     rbm.W .+= learning_rate .* (v_data * h_data' .- v_model * h_model')
     update_visible_bias ? rbm.a .+= learning_rate .* (v_data .- v_model) : nothing
     rbm.b .+= learning_rate .* (h_data .- h_model)
     return
 end
 
-conditional_prob_h(rbm::AbstractRBM, v::Vector{T}) where {T <: Union{Int, Float64}} = _sigmoid.(rbm.b .+ rbm.W' * v)
+conditional_prob_h(rbm::AbstractRBM, v::Vector{<:Number}) = _sigmoid.(rbm.b .+ rbm.W' * v)
 
-conditional_prob_h(rbm::AbstractRBM, v::Vector{T}, W_fast::Matrix{Float64}, b_fast::Vector{Float64}) where {T <: Union{Int, Float64}} =
+conditional_prob_h(rbm::AbstractRBM, v::Vector{<:Number}, W_fast::Matrix{Float64}, b_fast::Vector{Float64}) =
     _sigmoid.(rbm.b .+ b_fast .+ (rbm.W .+ W_fast)' * v)
 
-conditional_prob_h(rbm::RBMClassifier, v::Vector{T}, y::Vector{T}) where {T <: Union{Int, Float64}} = _sigmoid.(rbm.b .+ rbm.W' * v .+ rbm.U' * y)
+conditional_prob_h(rbm::RBMClassifier, v::Vector{<:Number}, y::Vector{<:Number}) = _sigmoid.(rbm.b .+ rbm.W' * v .+ rbm.U' * y)
 
 conditional_prob_h(
     rbm::RBMClassifier,
-    v::Vector{T},
-    y::Vector{T},
+    v::Vector{<:Number},
+    y::Vector{<:Number},
     W_fast::Matrix{Float64},
     U_fast::Matrix{Float64},
     b_fast::Vector{Float64},
-) where {T <: Union{Int, Float64}} = _sigmoid.(rbm.b .+ b_fast .+ (rbm.W .+ W_fast)' * v .+ (rbm.U .+ U_fast)' * y)
+) = _sigmoid.(rbm.b .+ b_fast .+ (rbm.W .+ W_fast)' * v .+ (rbm.U .+ U_fast)' * y)
 
-conditional_prob_v(rbm::AbstractRBM, h::Vector{T}) where {T <: Union{Int, Float64}} = _sigmoid.(rbm.a .+ rbm.W * h)
+conditional_prob_v(rbm::AbstractRBM, h::Vector{<:Number}) = _sigmoid.(rbm.a .+ rbm.W * h)
 
-conditional_prob_v(rbm::AbstractRBM, h::Vector{T}, W_fast::Matrix{Float64}, a_fast::Vector{Float64}) where {T <: Union{Int, Float64}} =
+conditional_prob_v(rbm::AbstractRBM, h::Vector{<:Number}, W_fast::Matrix{Float64}, a_fast::Vector{Float64}) =
     _sigmoid.(rbm.a .+ a_fast .+ (rbm.W .+ W_fast) * h)
 
-function conditional_prob_y_given_v(rbm::RBMClassifier, v::Vector{T}) where {T <: Union{Int, Float64}}
+function conditional_prob_y_given_v(rbm::RBMClassifier, v::Vector{<:Number})
     class_probabilities = zeros(rbm.n_classifiers)
 
     for y_i in 1:rbm.n_classifiers
@@ -138,7 +138,7 @@ function conditional_prob_y_given_v(rbm::RBMClassifier, v::Vector{T}) where {T <
     return exp.(class_probabilities .- log_denominator)
 end
 
-function conditional_prob_y_given_h(rbm::RBMClassifier, h::Vector{T}) where {T <: Union{Int, Float64}}
+function conditional_prob_y_given_h(rbm::RBMClassifier, h::Vector{<:Number})
     # Compute the log of the numerator
     log_numerator = rbm.c .+ rbm.U * h
 
@@ -151,10 +151,10 @@ end
 
 function conditional_prob_y_given_h(
     rbm::RBMClassifier,
-    h::Vector{T},
+    h::Vector{<:Number},
     W_fast::Matrix{Float64},
     c_fast::Vector{Float64},
-) where {T <: Union{Int, Float64}}
+)
     log_numerator = (rbm.c .+ c_fast) + (rbm.U .+ W_fast) * h
 
     log_denominator = logsumexp((rbm.c .+ c_fast) .+ (rbm.U .+ W_fast) * h)
@@ -162,13 +162,13 @@ function conditional_prob_y_given_h(
     return exp.(log_numerator .- log_denominator)
 end
 
-function reconstruct(rbm::AbstractRBM, v::Vector{T}) where {T <: Union{Int, Float64}}
+function reconstruct(rbm::AbstractRBM, v::Vector{<:Number})
     h = conditional_prob_h(rbm, v)
     v_reconstructed = conditional_prob_v(rbm, h)
     return v_reconstructed
 end
 
-function classify(rbm::RBMClassifier, v::Vector{T}) where {T <: Union{Int, Float64}}
+function classify(rbm::RBMClassifier, v::Vector{<:Number})
     y = conditional_prob_y_given_v(rbm, v)
     return y
 end
