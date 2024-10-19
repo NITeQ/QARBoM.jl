@@ -27,7 +27,6 @@ function persistent_contrastive_divergence!(
                 fantasy_data[batch_index].v,
                 fantasy_data[batch_index].h,
                 (learning_rate / length(mini_batch));
-                update_visible_bias = update_visible_bias,
             )
             total_t_update += time() - t_update
 
@@ -91,15 +90,61 @@ function persistent_contrastive_divergence!(
     return total_t_sample, total_t_gibbs, total_t_update
 end
 
+"""
+    train!(
+        rbm::AbstractRBM,
+        x_train,
+        ::Type{PCD};
+        n_epochs::Int,
+        batch_size::Int,
+        learning_rate::Vector{Float64},
+        metrics::Vector{<:EvaluationMethod} = [MeanSquaredError],
+        early_stopping::Bool = false,
+        store_best_rbm::Bool = true,
+        patience::Int = 10,
+        stopping_metric::Type{<:EvaluationMethod} = MeanSquaredError,
+        x_test_dataset = nothing,
+        y_test_dataset = nothing,
+        file_path = "pcd_metrics.csv",
+    )
+
+Train an RBM using the Persistent Contrastive Divergence (PCD) algorithm.
+
+### Arguments
+
+  - `rbm::AbstractRBM`: The RBM to train.
+  - `x_train`: The training data.
+  - `n_epochs::Int`: The number of epochs to train the RBM.
+  - `batch_size::Int`: The size of the mini-batches.
+  - `learning_rate::Vector{Float64}`: The learning rate for each epoch.
+  - `metrics::Vector{<:EvaluationMethod}`: The evaluation metrics to use.
+  - `early_stopping::Bool`: Whether to use early stopping.
+  - `stopping_metric::Type{<:EvaluationMethod}`: The metric to use for early stopping.
+  - `store_best_rbm::Bool`: Whether to store the rbm with the best `stopping_metric`.
+  - `patience::Int`: The number of epochs to wait before stopping.
+  - `patience::Int`: The number of epochs to wait before stopping.
+  - `x_test_dataset`: The test data to evaluate the model. If not set the training data will be used.
+  - `file_path`: The file path to store the metrics.
+"""
 function train!(
     rbm::AbstractRBM,
-    x_train;
+    x_train,
+    ::Type{PCD};
     n_epochs::Int,
     batch_size::Int,
     learning_rate::Vector{Float64},
-    evaluation_function::Union{Function, Nothing} = nothing,
-    metrics = nothing,
+    metrics::Vector{<:DataType} = [MeanSquaredError],
+    early_stopping::Bool = false,
+    store_best_rbm::Bool = true,
+    patience::Int = 10,
+    stopping_metric::Type{<:EvaluationMethod} = MeanSquaredError,
+    x_test_dataset = nothing,
+    file_path = "pcd_metrics.csv",
 )
+    best_rbm = copy_rbm(rbm)
+    metrics_dict = _initialize_metrics(metrics)
+    initial_patience = patience
+
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     println("Setting mini-batches")
     mini_batches = _set_mini_batches(length(x_train), batch_size)
@@ -107,33 +152,100 @@ function train!(
     println("Starting training")
 
     for epoch in 1:n_epochs
+        for key in keys(metrics_dict)
+            push!(metrics_dict[key], 0.0)
+        end
+
         t_sample, t_gibbs, t_update = persistent_contrastive_divergence!(
             rbm,
             x_train,
             epoch,
             mini_batches,
             fantasy_data;
-            evaluation_function = evaluation_function,
             learning_rate = learning_rate[epoch],
-            metrics = metrics,
         )
-        println("Finished epoch $epoch")
 
         total_t_sample += t_sample
         total_t_gibbs += t_gibbs
         total_t_update += t_update
 
-        if !isnothing(evaluation_function)
-            _log_epoch(epoch, t_sample, t_gibbs, t_update, total_t_sample + total_t_gibbs + total_t_update)
-            _log_metrics(metrics, epoch)
+        if !isnothing(x_test_dataset)
+            evaluate(rbm, metrics, x_test_dataset, metrics_dict, epoch)
+        else
+            evaluate(rbm, metrics, x_train, metrics_dict, epoch)
         end
+
+        if _diverged(metrics_dict, epoch, stopping_metric)
+            if early_stopping
+                if patience == 0
+                    println("Early stopping at epoch $epoch")
+                    break
+                end
+                patience -= 1
+            end
+        else
+            patience = initial_patience
+            if store_best_rbm
+                copy_rbm!(rbm, best_rbm)
+            end
+        end
+
+        _log_epoch(epoch, t_sample, t_gibbs, t_update, total_t_sample + total_t_gibbs + total_t_update)
+        _log_metrics(metrics_dict, epoch)
     end
+
+    if store_best_rbm
+        copy_rbm!(best_rbm, rbm)
+    end
+
+    CSV.write(file_path, DataFrame(metrics_dict))
 
     _log_finish(n_epochs, total_t_sample, total_t_gibbs, total_t_update)
 
     return
 end
 
+"""
+    train!(
+        rbm::RBMClassifier,
+        x_train,
+        label_train,
+        ::Type{PCD};
+        n_epochs::Int,
+        batch_size::Int,
+        learning_rate::Vector{Float64},
+        label_learning_rate::Vector{Float64},
+        metrics::Vector{<:EvaluationMethod} = [Accuracy],
+        early_stopping::Bool = false,
+        store_best_rbm::Bool = true,
+        patience::Int = 10,
+        stopping_metric::Type{<:EvaluationMethod} = Accuracy,
+        x_test_dataset = nothing,
+        y_test_dataset = nothing,
+        file_path = "pcd_classifier_metrics.csv",
+    )    
+
+Train an RBM classifier using the Persistent Contrastive Divergence (PCD) algorithm.
+
+### Arguments
+
+  - `rbm::RBMClassifier`: The RBM classifier to train.
+  - `x_train`: The training data.
+  - `label_train`: The training labels.
+  - `n_epochs::Int`: The number of epochs to train the RBM.
+  - `batch_size::Int`: The size of the mini-batches.
+  - `learning_rate::Vector{Float64}`: The learning rate for each epoch.
+  - `label_learning_rate::Vector{Float64}`: The learning rate for the labels for each epoch.
+  - `metrics::Vector{<:EvaluationMethod}`: The evaluation metrics to use.
+  - `early_stopping::Bool`: Whether to use early stopping.
+  - `stopping_metric::Type{<:EvaluationMethod}`: The metric to use for early stopping.
+  - `store_best_rbm::Bool`: Whether to store the rbm with the best `stopping_metric`.
+  - `patience::Int`: The number of epochs to wait before stopping.
+  - `patience::Int`: The number of epochs to wait before stopping.
+  - `x_test_dataset`: The test data to evaluate the model. If not set the training data will be used.
+  - `y_test_dataset`: The test labels to evaluate the model. If not set the training labels will be used.
+  - `file_path`: The file path to store the metrics.
+"""
 function train!(
     rbm::RBMClassifier,
     x_train,
@@ -143,10 +255,19 @@ function train!(
     batch_size::Int,
     learning_rate::Vector{Float64},
     label_learning_rate::Vector{Float64},
-    evaluation_function::Union{Function, Nothing} = nothing,
-    metrics = nothing,
+    metrics::Vector{<:DataType} = [Accuracy],
+    early_stopping::Bool = false,
+    store_best_rbm::Bool = true,
+    patience::Int = 10,
+    stopping_metric::Type{<:EvaluationMethod} = Accuracy,
+    x_test_dataset = nothing,
+    y_test_dataset = nothing,
+    file_path = "pcd_classifier_metrics.csv",
 )
     best_rbm = copy_rbm(rbm)
+    metrics_dict = _initialize_metrics(metrics)
+    initial_patience = patience
+
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     println("Setting mini-batches")
     mini_batches = _set_mini_batches(length(x_train) + length(label_train), batch_size)
@@ -154,6 +275,10 @@ function train!(
     println("Starting training")
 
     for epoch in 1:n_epochs
+        for key in keys(metrics_dict)
+            push!(metrics_dict[key], 0.0)
+        end
+
         t_sample, t_gibbs, t_update = persistent_contrastive_divergence!(
             rbm,
             x_train,
@@ -163,23 +288,42 @@ function train!(
             learning_rate = learning_rate[epoch],
             label_learning_rate = label_learning_rate[epoch],
         )
-        println("Finished epoch $epoch")
 
         total_t_sample += t_sample
         total_t_gibbs += t_gibbs
         total_t_update += t_update
 
-        if !isnothing(evaluation_function)
-            evaluation_function(rbm, metrics, epoch)
+        if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+            evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict, epoch)
+        else
+            evaluate(rbm, metrics, x_train, label_train, metrics_dict, epoch)
         end
 
-        if !isnothing(evaluation_function)
-            _log_epoch(epoch, t_sample, t_gibbs, t_update, total_t_sample + total_t_gibbs + total_t_update)
-            _log_metrics(metrics, epoch)
+        if _diverged(metrics_dict, epoch, stopping_metric)
+            if early_stopping
+                if patience == 0
+                    println("Early stopping at epoch $epoch")
+                    break
+                end
+                patience -= 1
+            end
+        else
+            patience = initial_patience
+            if store_best_rbm
+                copy_rbm!(rbm, best_rbm)
+            end
         end
+
+        _log_epoch(epoch, t_sample, t_gibbs, t_update, total_t_sample + total_t_gibbs + total_t_update)
+        _log_metrics(metrics_dict, epoch)
     end
 
-    _log_finish(n_epochs, total_t_sample, total_t_gibbs, total_t_update)
+    if store_best_rbm
+        copy_rbm!(best_rbm, rbm)
+    end
 
+    CSV.write(file_path, DataFrame(metrics_dict))
+
+    _log_finish(n_epochs, total_t_sample, total_t_gibbs, total_t_update)
     return
 end
