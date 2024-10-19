@@ -57,11 +57,11 @@ function persistent_contrastive_divergence!(
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     for mini_batch in mini_batches
         batch_index = 1
-        for sample_i in eachindex(mini_batch)
+        for sample_i in mini_batch
             t_sample = time()
             v_data = x[sample_i]
             y_data = label[sample_i]
-            h_data = conditional_prob_h(rbm, v_data, y_data) # hidden from training visible
+            h_data = conditional_prob_h(rbm, v_data, y_data)
             total_t_sample += time() - t_sample
 
             # Update hyperparameter
@@ -270,8 +270,8 @@ function train!(
 
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     println("Setting mini-batches")
-    mini_batches = _set_mini_batches(length(x_train) + length(label_train), batch_size)
-    fantasy_data = _init_fantasy_data(rbm, batch_size)
+    mini_batches = _set_mini_batches(length(x_train), batch_size)
+    fantasy_data = _init_fantasy_data(rbm, mini_batches)
     println("Starting training")
 
     for epoch in 1:n_epochs
