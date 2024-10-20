@@ -85,6 +85,9 @@ QARBoM.train!(
 ### Train RBM using Quantum Sampling
 
 ```julia
+using DWave # or any other quantum sampler
+
+
 # Define a setup for you quantum sampler
 MOI = QARBoM.ToQUBO.MOI
 MOI.supports(::DWave.Neal.Optimizer, ::MOI.ObjectiveSense) = true
@@ -109,5 +112,77 @@ QARBoM.train!(
     file_path = "qubo_train.csv",
     model_setup=setup_dwave,
     sampler=DWave.Neal.Optimizer,
+)
+```
+## RBM for classification
+
+You can use the `RBMClassifier` to train an RBM for classification. It's architecture was based on a [paper](https://dl.acm.org/doi/10.1145/1390156.1390224) by Larochelle et al. (see Figure 1 from this paper).
+
+```julia
+using QARBoM
+
+rbm = RBMClRBMClassifier(
+    10, # number of visible nodes
+    5, # number of hidden nodes
+    2, # number of nodes for the label
+)
+
+QARBoM.train!(
+    rbm, 
+    x_train,
+    y_train,
+    PCD; 
+    n_epochs = N_EPOCHS, 
+    batch_size = BATCH_SIZE, 
+    learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
+    label_learning_rate = [0.001/(j^0.6) for j in 1:N_EPOCHS], 
+    metrics = [Accuracy],
+    x_test_dataset = x_test,
+    y_test_dataset = y_test,
+    early_stopping = true,
+    file_path = "my_pcd_metrics_classification.csv",
+)
+```
+
+
+## Non-binary visible nodes
+
+You can work with continuous visible nodes with `QARBoM`. 
+
+According to [Hinton's article](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf), you need to normalize your dataset to have zero mean and unit variance. 
+
+In order to use continuous visible nodes for quantum sampling, there is an extra step.
+We leverage [QUBO.jl](https://github.com/JuliaQUBO/QUBO.jl) to convert continuous visible nodes to binary visible nodes. 
+To do so, you need to define the maximum and minimum values for each visible node. 
+See the example below:
+
+
+```julia
+using QARBoM, DWave
+
+rbm = RBMClRBMClassifier(
+    10, # number of visible nodes
+    5, # number of hidden nodes
+    2, # number of nodes for the label
+)
+
+QARBoM.train!(
+    rbm_qubo, 
+    x_train,
+    y_train,
+    QSampling; 
+    n_epochs = N_EPOCHS, 
+    batch_size = 5, 
+    learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
+    label_learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
+    metrics = [Accuracy],
+    x_test_dataset = x_test,
+    y_test_dataset = y_test,
+    early_stopping = true,
+    file_path = "qubo_train.csv",
+    model_setup=setup_dwave,
+    sampler=DWave.Neal.Optimizer,
+    max_visible = max_visible, # Vector{Float64}
+    min_visible = min_visible # Vector{Float64}
 )
 ```
