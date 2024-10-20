@@ -9,6 +9,11 @@ function persistent_contrastive_divergence!(
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     for mini_batch in mini_batches
         batch_index = 1
+
+        t_gibbs = time()
+        _update_fantasy_data!(rbm, fantasy_data)
+        total_t_gibbs += time() - t_gibbs
+
         for sample in x[mini_batch]
             t_sample = time()
             v_data = sample # training visible
@@ -29,11 +34,6 @@ function persistent_contrastive_divergence!(
 
             batch_index += 1
         end
-
-        # Update fantasy data
-        t_gibbs = time()
-        _update_fantasy_data!(rbm, fantasy_data)
-        total_t_gibbs += time() - t_gibbs
     end
     return total_t_sample, total_t_gibbs, total_t_update
 end

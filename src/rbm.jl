@@ -73,10 +73,9 @@ function update_rbm!(
     v_model::Vector{<:Number},
     h_model::Vector{<:Number},
     learning_rate::Float64;
-    update_visible_bias::Bool = true,
 )
     rbm.W .+= learning_rate .* (v_data * h_data' .- v_model * h_model')
-    update_visible_bias ? rbm.a .+= learning_rate .* (v_data .- v_model) : nothing
+    rbm.a .+= learning_rate .* (v_data .- v_model)
     rbm.b .+= learning_rate .* (h_data .- h_model)
     return
 end
