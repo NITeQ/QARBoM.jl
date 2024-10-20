@@ -172,8 +172,5 @@ function copy_rbm!(rbm_src::RBMClassifier, rbm_target::RBMClassifier)
     rbm_target.a .= rbm_src.a
     rbm_target.b .= rbm_src.b
     rbm_target.c .= rbm_src.c
-    rbm_target.n_visible = rbm_src.n_visible
-    rbm_target.n_hidden = rbm_src.n_hidden
-    rbm_target.n_classifiers = rbm_src.n_classifiers
     return
 end

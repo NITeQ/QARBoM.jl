@@ -2,12 +2,9 @@
 function persistent_contrastive_divergence!(
     rbm::AbstractRBM,
     x,
-    epoch::Int,
     mini_batches::Vector{UnitRange{Int}},
     fantasy_data::Vector{FantasyData};
     learning_rate::Float64 = 0.1,
-    evaluation_function::Union{Function, Nothing} = nothing,
-    metrics = nothing,
 )
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     for mini_batch in mini_batches
@@ -30,9 +27,6 @@ function persistent_contrastive_divergence!(
             )
             total_t_update += time() - t_update
 
-            if !isnothing(evaluation_function)
-                evaluation_function(rbm, sample, metrics, epoch)
-            end
             batch_index += 1
         end
 
@@ -159,7 +153,6 @@ function train!(
         t_sample, t_gibbs, t_update = persistent_contrastive_divergence!(
             rbm,
             x_train,
-            epoch,
             mini_batches,
             fantasy_data;
             learning_rate = learning_rate[epoch],

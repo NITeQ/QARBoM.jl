@@ -1,13 +1,9 @@
-
 function persistent_qubo!(
     rbm::AbstractRBM,
     model,
     x,
-    epoch::Int,
     mini_batches::Vector{UnitRange{Int}};
     learning_rate::Float64 = 0.1,
-    evaluation_function::Function,
-    metrics::Any,
 )
     total_t_sample, total_t_qs, total_t_update = 0.0, 0.0, 0.0
     for mini_batch in mini_batches
@@ -31,8 +27,6 @@ function persistent_qubo!(
                 (learning_rate / length(mini_batch)),
             )
             total_t_update += time() - t_update
-
-            evaluation_function(rbm, sample, metrics, epoch)
         end
         t_update = time()
         _update_qubo_model!(model, rbm)
@@ -46,7 +40,6 @@ function persistent_qubo!(
     model,
     x,
     label,
-    epoch::Int,
     mini_batches::Vector{UnitRange{Int}};
     learning_rate::Float64 = 0.1,
     label_learning_rate::Float64 = 0.1,
@@ -92,12 +85,21 @@ function train!(
     n_epochs::Int,
     batch_size::Int,
     learning_rate::Vector{Float64},
+    metrics::Vector{<:DataType} = [MeanSquaredError],
+    early_stopping::Bool = false,
+    store_best_rbm::Bool = true,
+    patience::Int = 10,
+    stopping_metric::Type{<:EvaluationMethod} = MeanSquaredError,
+    x_test_dataset = nothing,
+    file_path = "qsamp_classifier_metrics.csv",
     model_setup::Function,
     sampler,
-    evaluation_function::Function,
-    metrics::Any,
     kwargs...,
 )
+    best_rbm = copy_rbm(rbm)
+    metrics_dict = _initialize_metrics(metrics)
+    initial_patience = patience
+
     println("Setting up QUBO model")
     qubo_model = _create_qubo_model(rbm, sampler, model_setup; kwargs...)
     total_t_sample, total_t_qs, total_t_update = 0.0, 0.0, 0.0
@@ -111,20 +113,45 @@ function train!(
                 rbm,
                 qubo_model,
                 x_train,
-                epoch,
                 mini_batches;
                 learning_rate = learning_rate[epoch],
-                evaluation_function = evaluation_function,
-                metrics = metrics,
             )
 
         total_t_sample += t_sample
         total_t_qs += t_qs
         total_t_update += t_update
 
+        if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+            evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict, epoch)
+        else
+            evaluate(rbm, metrics, x_train, label_train, metrics_dict, epoch)
+        end
+
+        if _diverged(metrics_dict, epoch, stopping_metric)
+            if early_stopping
+                if patience == 0
+                    println("Early stopping at epoch $epoch")
+                    break
+                end
+                patience -= 1
+            end
+        else
+            patience = initial_patience
+            if store_best_rbm
+                copy_rbm!(rbm, best_rbm)
+            end
+        end
+
         _log_epoch_quantum(epoch, t_sample, t_qs, t_update, total_t_sample + total_t_qs + total_t_update)
         _log_metrics(metrics, epoch)
     end
+
+    if store_best_rbm
+        copy_rbm!(best_rbm, rbm)
+    end
+
+    CSV.write(file_path, DataFrame(metrics_dict))
+
     _log_finish_quantum(n_epochs, total_t_sample, total_t_qs, total_t_update)
 
     return
@@ -223,7 +250,6 @@ function train!(
                 qubo_model,
                 x_train,
                 label_train,
-                epoch,
                 mini_batches;
                 learning_rate = learning_rate[epoch],
                 label_learning_rate = label_learning_rate[epoch],
