@@ -30,7 +30,7 @@ Using the [QUBO.jl](https://github.com/JuliaQUBO/QUBO.jl) package, this package 
 ```julia
 using QARBoM
 
-# Get a dataset. Should be a Vector{Vector{Float64}} where each inner vector is a sample.
+# Get a dataset. Should be a Vector{Vector{<:Number}} where each inner vector is a sample.
 train_data = MY_DATA_TRAIN
 test_data = MY_DATA_TEST
 
