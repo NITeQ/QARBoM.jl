@@ -1,7 +1,6 @@
 # CD-K algorithm
 function contrastive_divergence!(rbm::AbstractRBM, x; steps::Int, learning_rate::Float64 = 0.1)
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
-    loss = 0.0
     for sample in x
         t_sample = time()
         v_data = sample # training visible
@@ -17,64 +16,175 @@ function contrastive_divergence!(rbm::AbstractRBM, x; steps::Int, learning_rate:
         t_update = time()
         update_rbm!(rbm, v_data, h_data, v_model, h_model, learning_rate)
         total_t_update += time() - t_update
-
-        # Update loss
-        reconstructed = reconstruct(rbm, sample)
-        loss += sum((sample .- reconstructed) .^ 2)
     end
-    return loss / length(x), total_t_sample, total_t_gibbs, total_t_update
+    return total_t_sample, total_t_gibbs, total_t_update
 end
 
-function train_cd!(
+function contrastive_divergence!(rbm::RBMClassifier, x, y; steps::Int, learning_rate::Float64 = 0.1, label_learning_rate::Float64 = 0.1)
+    total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
+    for sample_i in eachindex(x)
+        v_data = x[sample_i]
+        y_data = y[sample_i]
+        t_sample = time()
+        h_data = conditional_prob_h(rbm, v_data, y_data)
+        total_t_sample += time() - t_sample
+
+        t_gibbs = time()
+        v_model, y_model = _get_v_y_model(rbm, v_data, y_data, steps)
+        h_model = conditional_prob_h(rbm, v_model)
+        total_t_gibbs += time() - t_gibbs
+
+        # Update hyperparameter
+        t_update = time()
+        update_rbm!(rbm, v_data, h_data, y_data, v_model, h_model, y_model, learning_rate, label_learning_rate)
+        total_t_update += time() - t_update
+    end
+    return total_t_sample, total_t_gibbs, total_t_update
+end
+
+function train!(
     rbm::AbstractRBM,
-    x_train::Vector{Vector{Int}};
+    x_train,
+    ::Type{CD};
     n_epochs::Int,
     cd_steps::Int = 3,
-    learning_rate::Float64,
+    learning_rate::Vector{Float64},
+    metrics::Vector{<:DataType} = [MeanSquaredError],
+    early_stopping::Bool = false,
+    store_best_rbm::Bool = true,
+    patience::Int = 10,
+    stopping_metric::Type{<:EvaluationMethod} = MeanSquaredError,
+    x_test_dataset = nothing,
+    file_path = "cd_metrics.csv",
 )
+    best_rbm = copy_rbm(rbm)
+    metrics_dict = _initialize_metrics(metrics)
+    initial_patience = patience
+
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
-    avg_loss_vector = Vector{Float64}(undef, n_epochs)
+
     for epoch in 1:n_epochs
-        avg_loss, t_sample, t_gibbs, t_update = contrastive_divergence!(
+        for key in keys(metrics_dict)
+            push!(metrics_dict[key], 0.0)
+        end
+
+        t_sample, t_gibbs, t_update = contrastive_divergence!(
             rbm,
             x_train;
             steps = cd_steps,
-            learning_rate = learning_rate,
+            learning_rate = learning_rate[epoch],
         )
         total_t_sample += t_sample
         total_t_gibbs += t_gibbs
         total_t_update += t_update
-        println(
-            "|------------------------------------------------------------------------------|",
-        )
-        println(
-            "| Epoch | Avg. Loss | Time (Sample) | Time (Gibbs) | Time (Update) | Total     |",
-        )
-        println(
-            "|------------------------------------------------------------------------------|",
-        )
-        println(
-            @sprintf(
-                "| %5d | %9.4f | %13.4f | %12.4f | %13.4f | %9.4f |",
-                epoch,
-                avg_loss,
-                t_sample,
-                t_gibbs,
-                t_update,
-                total_t_sample + total_t_gibbs + total_t_update,
-            )
-        )
-        println(
-            "|------------------------------------------------------------------------------|",
-        )
 
-        avg_loss_vector[epoch] = avg_loss
+        if !isnothing(x_test_dataset)
+            evaluate(rbm, metrics, x_test_dataset, metrics_dict, epoch)
+        else
+            evaluate(rbm, metrics, x_train, metrics_dict, epoch)
+        end
+
+        if _diverged(metrics_dict, epoch, stopping_metric)
+            if early_stopping
+                if patience == 0
+                    println("Early stopping at epoch $epoch")
+                    break
+                end
+                patience -= 1
+            end
+        else
+            patience = initial_patience
+            if store_best_rbm
+                copy_rbm!(rbm, best_rbm)
+            end
+        end
+
+        _log_epoch(epoch, t_sample, t_gibbs, t_update, total_t_sample + total_t_gibbs + total_t_update)
+        _log_metrics(metrics_dict, epoch)
     end
-    println("Finished training after $n_epochs epochs.")
 
-    println("Total time spent sampling: $total_t_sample")
-    println("Total time spent in Gibbs sampling: $total_t_gibbs")
-    println("Total time spent updating parameters: $total_t_update")
-    println("Total time spent training: $(total_t_sample + total_t_gibbs + total_t_update)")
-    return avg_loss_vector
+    if store_best_rbm
+        copy_rbm!(best_rbm, rbm)
+    end
+
+    CSV.write(file_path, DataFrame(metrics_dict))
+
+    _log_finish(n_epochs, total_t_sample, total_t_gibbs, total_t_update)
+    return
+end
+
+function train!(
+    rbm::RBMClassifier,
+    x_train,
+    label_train,
+    ::Type{CD};
+    n_epochs::Int,
+    cd_steps::Int = 3,
+    learning_rate::Vector{Float64},
+    label_learning_rate::Vector{Float64},
+    metrics::Vector{<:DataType} = [Accuracy],
+    early_stopping::Bool = false,
+    store_best_rbm::Bool = true,
+    patience::Int = 10,
+    stopping_metric::Type{<:EvaluationMethod} = Accuracy,
+    x_test_dataset = nothing,
+    y_test_dataset = nothing,
+    file_path = "cd_classifier_metrics.csv",
+)
+    best_rbm = copy_rbm(rbm)
+    metrics_dict = _initialize_metrics(metrics)
+    initial_patience = patience
+
+    total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
+
+    for epoch in 1:n_epochs
+        for key in keys(metrics_dict)
+            push!(metrics_dict[key], 0.0)
+        end
+
+        t_sample, t_gibbs, t_update = contrastive_divergence!(
+            rbm,
+            x_train,
+            label_train;
+            steps = cd_steps,
+            learning_rate = learning_rate[epoch],
+            label_learning_rate = label_learning_rate[epoch],
+        )
+        total_t_sample += t_sample
+        total_t_gibbs += t_gibbs
+        total_t_update += t_update
+
+        if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+            evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict, epoch)
+        else
+            evaluate(rbm, metrics, x_train, label_train, metrics_dict, epoch)
+        end
+
+        if _diverged(metrics_dict, epoch, stopping_metric)
+            if early_stopping
+                if patience == 0
+                    println("Early stopping at epoch $epoch")
+                    break
+                end
+                patience -= 1
+            end
+        else
+            patience = initial_patience
+            if store_best_rbm
+                copy_rbm!(rbm, best_rbm)
+            end
+        end
+
+        _log_epoch(epoch, t_sample, t_gibbs, t_update, total_t_sample + total_t_gibbs + total_t_update)
+        _log_metrics(metrics_dict, epoch)
+    end
+
+    if store_best_rbm
+        copy_rbm!(best_rbm, rbm)
+    end
+
+    CSV.write(file_path, DataFrame(metrics_dict))
+
+    _log_finish(n_epochs, total_t_sample, total_t_gibbs, total_t_update)
+    return
 end
