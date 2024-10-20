@@ -47,30 +47,6 @@ function RBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, W::Mat
     return RBMClassifier(copy(W), copy(U), a, b, c, n_visible, n_hidden, n_classifiers)
 end
 
-function RBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, max_visible::Vector{Float64}, min_visible::Vector{Float64})
-    W = randn(n_visible, n_hidden)
-    U = randn(n_classifiers, n_hidden)
-    a = zeros(n_visible)
-    b = zeros(n_hidden)
-    c = zeros(n_classifiers)
-    return RBMClassifier(W, U, a, b, c, n_visible, n_hidden, n_classifiers)
-end
-
-function RBMClassifier(
-    n_visible::Int,
-    n_hidden::Int,
-    n_classifiers::Int,
-    max_visible::Vector{Float64},
-    min_visible::Vector{Float64},
-    W::Matrix{Float64},
-    U::Matrix{Float64},
-)
-    a = zeros(n_visible)
-    b = zeros(n_hidden)
-    c = zeros(n_classifiers)
-    return RBMClassifier(copy(W), copy(U), a, b, c, n_visible, n_hidden, n_classifiers)
-end
-
 function update_rbm!(
     rbm::RBMClassifier,
     v_data::Vector{<:Number},
@@ -127,7 +103,7 @@ conditional_prob_v(rbm::AbstractRBM, h::Vector{<:Number}, W_fast::Matrix{Float64
     _sigmoid.(rbm.a .+ a_fast .+ (rbm.W .+ W_fast) * h)
 
 function conditional_prob_y_given_v(rbm::RBMClassifier, v::Vector{<:Number})
-    class_probabilities = zeros(rbm.n_classifiers)
+    class_probabilities = Vector{Float64}(undef, rbm.n_classifiers)
 
     for y_i in 1:rbm.n_classifiers
         class_probabilities[y_i] = rbm.c[y_i] + sum(log1pexp(rbm.U[y_i, h_j] + rbm.W[:, h_j]' * v + rbm.b[h_j]) for h_j in 1:rbm.n_hidden)
