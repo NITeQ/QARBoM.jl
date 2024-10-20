@@ -125,7 +125,7 @@ You can use the `RBMClassifier` to train an RBM for classification. It's archite
 ```julia
 using QARBoM
 
-rbm = RBMClRBMClassifier(
+rbm = RBMClassifier(
     10, # number of visible nodes
     5, # number of hidden nodes
     2, # number of nodes for the label
@@ -164,7 +164,7 @@ See the example below:
 ```julia
 using QARBoM, DWave
 
-rbm = RBMClRBMClassifier(
+rbm = RBMClassifier(
     10, # number of visible nodes
     5, # number of hidden nodes
     2, # number of nodes for the label
