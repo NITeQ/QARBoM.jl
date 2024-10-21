@@ -7,7 +7,12 @@
   <img height="200" alt="QARBoM.jl logo">
 </picture>
 
+[build-img]: https://github.com/NITeQ/QARBoM.jl/actions/workflows/ci.yml/badge.svg?branch=main
+![Build Status][build-img]
+
 </div>
+
+
 
 ---
 
