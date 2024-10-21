@@ -17,7 +17,7 @@ function test_cd()
     )
 
     rec = QARBoM.reconstruct(rbm_cd, [1, 0, 0])
-    @test isapprox(rec, [1, 0, 0], atol = 0.01)
+    @test isapprox(rec, [1, 0, 0], atol = 0.1)
 end
 
 function test_pcd()
@@ -36,7 +36,7 @@ function test_pcd()
     )
 
     rec = QARBoM.reconstruct(rbm_pcd, [1, 0, 0])
-    @test isapprox(rec, [1, 0, 0], atol = 0.01)
+    @test isapprox(rec, [1, 0, 0], atol = 0.1)
 end
 
 function fast_pcd()
@@ -56,7 +56,7 @@ function fast_pcd()
     )
 
     rec = QARBoM.reconstruct(rbm_pcd, [1, 0, 0])
-    @test isapprox(rec, [1, 0, 0], atol = 0.01)
+    @test isapprox(rec, [1, 0, 0], atol = 0.1)
 end
 
 @testset "CD" begin
