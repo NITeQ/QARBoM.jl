@@ -43,7 +43,6 @@ function fast_persistent_contrastive_divergence!(
 
             total_t_update += time() - t_update
 
-            evaluation_function(rbm, sample, metrics, epoch)
             batch_index += 1
         end
 
@@ -229,7 +228,7 @@ function train!(
         end
 
         _log_epoch(epoch, t_sample, t_gibbs, t_update, total_t_sample + total_t_gibbs + total_t_update)
-        _log_metrics(metrics, epoch)
+        _log_metrics(metrics_dict, epoch)
     end
     if store_best_rbm
         copy_rbm!(best_rbm, rbm)

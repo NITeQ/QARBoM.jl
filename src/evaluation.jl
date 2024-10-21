@@ -28,11 +28,11 @@ end
 function evaluate(
     rbm::RBMClassifier,
     metrics::Vector{<:DataType},
-    x_dataset::Vector{Vector{Float64}},
-    y_dataset::Vector{Vector{Float64}},
+    x_dataset::Vector{Vector{T}},
+    y_dataset::Vector{Vector{T}},
     metrics_dict::Dict{String, Vector{Float64}},
     epoch::Int,
-)
+) where {T <: Union{Float64, Int}}
     dataset_size = length(x_dataset)
     for sample_i in eachindex(x_dataset)
         vis = x_dataset[sample_i]
@@ -50,10 +50,10 @@ end
 function evaluate(
     rbm::AbstractRBM,
     metrics::Vector{<:DataType},
-    x_dataset::Vector{Vector{Float64}},
+    x_dataset::Vector{Vector{T}},
     metrics_dict::Dict{String, Vector{Float64}},
     epoch::Int,
-)
+) where {T <: Union{Float64, Int}}
     dataset_size = length(x_dataset)
     for sample_i in eachindex(x_dataset)
         vis = x_dataset[sample_i]

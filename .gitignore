@@ -30,3 +30,5 @@ example/.CondaPkg/*
 .DS_Store
 .ipynb_checkpoints
 .CondaPkg
+
+test/*.csv

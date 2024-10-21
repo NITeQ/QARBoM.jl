@@ -2,7 +2,10 @@ using Test
 using QARBoM
 
 @testset "QARBoM" begin
-    @testset "MNIST" begin
-        include("mnist.jl")
+    @testset "Generative" begin
+        include("generative.jl")
+    end
+    @testset "Classification" begin
+        include("classification.jl")
     end
 end

@@ -27,9 +27,9 @@ function _set_mini_batches(training_set_length::Int, batch_size::Int)
 end
 
 function _log_epoch(epoch::Int, t_sample::Float64, t_gibbs::Float64, t_update::Float64, total_t::Float64)
-    println("|------------------------------------------------------------------------------|")
+    println("|------------------------------------------------------------------|")
     println("| Epoch | Time (Sample) | Time (Gibbs) | Time (Update) | Total     |")
-    println("|------------------------------------------------------------------------------|")
+    println("|------------------------------------------------------------------|")
     println(
         @sprintf(
             "| %5d | %13.4f | %12.4f | %13.4f | %9.4f |",
@@ -40,13 +40,13 @@ function _log_epoch(epoch::Int, t_sample::Float64, t_gibbs::Float64, t_update::F
             total_t,
         )
     )
-    return println("|------------------------------------------------------------------------------|")
+    return println("|------------------------------------------------------------------|")
 end
 
 function _log_epoch_quantum(epoch::Int, t_sample::Float64, t_qs::Float64, t_update::Float64, total_t::Float64)
-    println("|------------------------------------------------------------------------------|")
+    println("|------------------------------------------------------------------|")
     println("| Epoch | Time (Sample) | Time (Qsamp) | Time (Update) | Total     |")
-    println("|------------------------------------------------------------------------------|")
+    println("|------------------------------------------------------------------|")
     println(
         @sprintf(
             "| %5d | %13.4f | %12.4f | %13.4f | %9.4f |",
@@ -57,7 +57,7 @@ function _log_epoch_quantum(epoch::Int, t_sample::Float64, t_qs::Float64, t_upda
             total_t,
         )
     )
-    return println("|------------------------------------------------------------------------------|")
+    return println("|------------------------------------------------------------------|")
 end
 
 function _log_metrics(metrics::Dict{String, Vector{Float64}}, epoch::Int)
