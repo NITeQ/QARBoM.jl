@@ -15,3 +15,9 @@ ToQUBO = "9a412ddf-83fa-43b6-9748-7843c851aa65"
 [compat]
 ToQUBO = "0.1.8"
 julia = "1.9"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
