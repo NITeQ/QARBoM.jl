@@ -67,6 +67,22 @@ function update_rbm!(
 end
 
 function update_rbm!(
+    rbm::RBMClassifier,
+    δ_W::Matrix{Float64},
+    δ_U::Matrix{Float64},
+    δ_a::Vector{Float64},
+    δ_b::Vector{Float64},
+    δ_c::Vector{Float64},
+)
+    rbm.W .+= δ_W
+    rbm.U .+= δ_U
+    rbm.a .+= δ_a
+    rbm.b .+= δ_b
+    rbm.c .+= δ_c
+    return
+end
+
+function update_rbm!(
     rbm::AbstractRBM,
     v_data::Vector{<:Number},
     h_data::Vector{<:Number},
@@ -77,6 +93,18 @@ function update_rbm!(
     rbm.W .+= learning_rate .* (v_data * h_data' .- v_model * h_model')
     rbm.a .+= learning_rate .* (v_data .- v_model)
     rbm.b .+= learning_rate .* (h_data .- h_model)
+    return
+end
+
+function update_rbm!(
+    rbm::AbstractRBM,
+    δ_W::Matrix{Float64},
+    δ_a::Vector{Float64},
+    δ_b::Vector{Float64},
+)
+    rbm.W .+= δ_W
+    rbm.a .+= δ_a
+    rbm.b .+= δ_b
     return
 end
 

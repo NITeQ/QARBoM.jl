@@ -14,6 +14,10 @@ function persistent_contrastive_divergence!(
         _update_fantasy_data!(rbm, fantasy_data)
         total_t_gibbs += time() - t_gibbs
 
+        δ_W = zeros(size(rbm.W))
+        δ_a = zeros(size(rbm.a))
+        δ_b = zeros(size(rbm.b))
+
         for sample in x[mini_batch]
             t_sample = time()
             v_data = sample # training visible
@@ -22,18 +26,19 @@ function persistent_contrastive_divergence!(
 
             # Update hyperparameter
             t_update = time()
-            update_rbm!(
-                rbm,
-                v_data,
-                h_data,
-                fantasy_data[batch_index].v,
-                fantasy_data[batch_index].h,
-                (learning_rate / length(mini_batch));
-            )
+            δ_W += (v_data * h_data' .- fantasy_data[batch_index].v * fantasy_data[batch_index].h') .* (learning_rate / length(mini_batch))
+            δ_a += (v_data .- fantasy_data[batch_index].v) .* (learning_rate / length(mini_batch))
+            δ_b += (h_data .- fantasy_data[batch_index].h) .* (learning_rate / length(mini_batch))
+
+            update_rbm!(rbm, δ_W, δ_a, δ_b)
             total_t_update += time() - t_update
 
             batch_index += 1
         end
+
+        t_update = time()
+        update_rbm!(rbm, δ_W, δ_a, δ_b)
+        total_t_update += time() - t_update
     end
     return total_t_sample, total_t_gibbs, total_t_update
 end
