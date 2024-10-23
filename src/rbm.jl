@@ -73,12 +73,14 @@ function update_rbm!(
     δ_a::Vector{Float64},
     δ_b::Vector{Float64},
     δ_c::Vector{Float64},
+    learning_rate::Float64,
+    label_learning_rate::Float64,
 )
-    rbm.W .+= δ_W
-    rbm.U .+= δ_U
-    rbm.a .+= δ_a
-    rbm.b .+= δ_b
-    rbm.c .+= δ_c
+    rbm.W .+= δ_W .* learning_rate
+    rbm.U .+= δ_U .* label_learning_rate
+    rbm.a .+= δ_a .* learning_rate
+    rbm.b .+= δ_b .* learning_rate
+    rbm.c .+= δ_c .* label_learning_rate
     return
 end
 
@@ -101,10 +103,11 @@ function update_rbm!(
     δ_W::Matrix{Float64},
     δ_a::Vector{Float64},
     δ_b::Vector{Float64},
+    learning_rate::Float64,
 )
-    rbm.W .+= δ_W
-    rbm.a .+= δ_a
-    rbm.b .+= δ_b
+    rbm.W .+= δ_W .* learning_rate
+    rbm.a .+= δ_a .* learning_rate
+    rbm.b .+= δ_b .* learning_rate
     return
 end
 
