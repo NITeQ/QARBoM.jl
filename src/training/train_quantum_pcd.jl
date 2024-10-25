@@ -43,6 +43,7 @@ function persistent_qubo!(
     mini_batches::Vector{UnitRange{Int}};
     learning_rate::Float64 = 0.1,
     label_learning_rate::Float64 = 0.1,
+    weight::Int64
 )
     total_t_sample, total_t_qs, total_t_update = 0.0, 0.0, 0.0
     for mini_batch in mini_batches
@@ -68,6 +69,7 @@ function persistent_qubo!(
                 label_model,
                 (learning_rate / length(mini_batch)),
                 (label_learning_rate / length(mini_batch)),
+                weight
             )
             total_t_update += time() - t_update
         end
@@ -226,6 +228,7 @@ function train!(
     file_path = "qsamp_classifier_metrics.csv",
     model_setup::Function,
     sampler,
+    weight::Int64 = 0,
     kwargs...,
 )
     best_rbm = copy_rbm(rbm)
@@ -253,6 +256,7 @@ function train!(
                 mini_batches;
                 learning_rate = learning_rate[epoch],
                 label_learning_rate = label_learning_rate[epoch],
+                weight
             )
 
         total_t_sample += t_sample

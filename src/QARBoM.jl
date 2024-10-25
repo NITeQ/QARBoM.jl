@@ -17,6 +17,9 @@ abstract type FastPCD <: TrainingMethod end
 abstract type AbstractDBN end
 abstract type AbstractRBM end
 abstract type DBNLayer end
+const p_1 = 1528/144195
+const p_0 = 1 - p_1
+const gamma = 5
 
 export RBM, RBMClassifier
 export QSampling, PCD, CD, FastPCD

@@ -57,13 +57,25 @@ function update_rbm!(
     y_model::Vector{<:Number},
     learning_rate::Float64,
     label_learning_rate::Float64,
+    weight,
 )
-    rbm.W .+= learning_rate .* (v_data * h_data' .- v_model * h_model')
-    rbm.a .+= learning_rate .* (v_data .- v_model)
-    rbm.b .+= learning_rate .* (h_data .- h_model)
-    rbm.U .+= label_learning_rate .* (y_data * h_data' .- y_model * h_model')
-    rbm.c .+= label_learning_rate .* (y_data .- y_model)
-    return
+    if weight == 0
+        rbm.W .+= learning_rate .* (v_data * h_data' .- v_model * h_model')
+        rbm.a .+= learning_rate .* (v_data .- v_model)
+        rbm.b .+= learning_rate .* (h_data .- h_model)
+        rbm.U .+= label_learning_rate .* (y_data * h_data' .- y_model * h_model')
+        rbm.c .+= label_learning_rate .* (y_data .- y_model)
+        return
+    end
+
+    if weight == 1
+        rbm.W .+= (1-p_0)^gamma .* learning_rate .* (v_data * h_data' .- v_model * h_model') .+ (1-p_1)^gamma * learning_rate .* (v_data * h_data' .- v_model * h_model')
+        rbm.a .+= (1-p_0)^gamma .* learning_rate .* (v_data .- v_model) .+ (1-p_1)^gamma * learning_rate .* (v_data .- v_model)
+        rbm.b .+= (1-p_0)^gamma .* learning_rate .* (h_data .- h_model) .+ (1-p_1)^gamma * learning_rate .* (h_data .- h_model)
+        rbm.U .+= (1-p_0)^gamma .* label_learning_rate .* (y_data * h_data' .- y_model * h_model') .+ (1-p_1)^gamma * label_learning_rate .* (y_data * h_data' .- y_model * h_model')
+        rbm.c .+= (1-p_0)^gamma .* label_learning_rate .* (y_data .- y_model) .+ (1-p_1)^gamma * label_learning_rate .* (y_data .- y_model)
+        return
+    end
 end
 
 function update_rbm!(

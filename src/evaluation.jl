@@ -3,14 +3,22 @@ abstract type EvaluationMethod end
 abstract type Accuracy <: EvaluationMethod end
 abstract type CrossEntropy <: EvaluationMethod end
 abstract type MeanSquaredError <: EvaluationMethod end
+abstract type Precision <: EvaluationMethod end
 
-export Accuracy, MeanSquaredError, CrossEntropy
+export Accuracy, MeanSquaredError, CrossEntropy, Precision
 
 function _evaluate(::Type{Accuracy}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
     sample = kwargs[:y_sample]
     predicted = kwargs[:y_pred]
     tp = all(i -> i == 1, round.(Int, sample) .== round.(Int, predicted)) ? 1 : 0
     return metrics_dict["accuracy"][epoch] += tp / dataset_size
+end
+
+function _evaluate(::Type{Precision}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
+    sample = kwargs[:y_sample]
+    predicted = kwargs[:y_pred]
+    tp = all(i -> i == 1, round.(Int, sample) .== round.(Int, predicted)) ? 1 : 0
+    return metrics_dict["precision"][epoch] += tp / dataset_size
 end
 
 function _evaluate(::Type{MeanSquaredError}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
@@ -74,6 +82,8 @@ function _initialize_metrics(metrics::Vector{<:DataType})
             metrics_dict["mse"] = Float64[]
         elseif metric == CrossEntropy
             metrics_dict["cross_entropy"] = Float64[]
+        elseif metric == Precision
+        metrics_dict["precision"] = Float64[]
         end
     end
     return metrics_dict
@@ -114,3 +124,16 @@ function _diverged(metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, ::Ty
     end
     return false
 end
+
+function _diverged(metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, ::Type{Precision})
+    if epoch == 1
+        return false
+    end
+    if metrics_dict["precision"][epoch] < metrics_dict["precision"][epoch-1]
+        return true
+    elseif metrics_dict["precision"][epoch] < maximum(metrics_dict["precision"])
+        return true
+    end
+    return false
+end
+

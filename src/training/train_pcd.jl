@@ -47,6 +47,7 @@ function persistent_contrastive_divergence!(
     fantasy_data::Vector{FantasyDataClassifier};
     learning_rate::Float64 = 0.1,
     label_learning_rate::Float64 = 0.1,
+    use_weights::Int64 = 0,
 )
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     for mini_batch in mini_batches
@@ -70,6 +71,7 @@ function persistent_contrastive_divergence!(
                 fantasy_data[batch_index].y,
                 (learning_rate / length(mini_batch)),
                 (label_learning_rate / length(mini_batch)),
+                use_weights,
             )
             total_t_update += time() - t_update
 
@@ -256,6 +258,7 @@ function train!(
     x_test_dataset = nothing,
     y_test_dataset = nothing,
     file_path = "pcd_classifier_metrics.csv",
+    use_weights = 0,
 )
     best_rbm = copy_rbm(rbm)
     metrics_dict = _initialize_metrics(metrics)
@@ -280,6 +283,7 @@ function train!(
             fantasy_data;
             learning_rate = learning_rate[epoch],
             label_learning_rate = label_learning_rate[epoch],
+            use_weights = 0,
         )
 
         total_t_sample += t_sample
