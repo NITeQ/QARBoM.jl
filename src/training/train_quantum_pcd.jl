@@ -10,6 +10,11 @@ function persistent_qubo!(
         t_qs = time()
         v_model, h_model = _qubo_sample(rbm, model) # v~, h~
         total_t_qs += time() - t_qs
+
+        δ_W = zeros(size(rbm.W))
+        δ_a = zeros(size(rbm.a))
+        δ_b = zeros(size(rbm.b))
+
         for sample in x[mini_batch]
             t_sample = time()
             v_data = sample # training visible
@@ -18,16 +23,14 @@ function persistent_qubo!(
 
             # Update hyperparameter
             t_update = time()
-            update_rbm!(
-                rbm,
-                v_data,
-                h_data,
-                v_model,
-                h_model,
-                (learning_rate / length(mini_batch)),
-            )
+            δ_W += (v_data * h_data' .- v_model * h_model')
+            δ_a += (v_data .- v_model)
+            δ_b += (h_data .- h_model)
             total_t_update += time() - t_update
         end
+
+        t_update = time()
+        update_rbm!(rbm, δ_W, δ_a, δ_b, learning_rate / length(mini_batch))
         t_update = time()
         _update_qubo_model!(model, rbm)
         total_t_update += time() - t_update
@@ -49,6 +52,13 @@ function persistent_qubo!(
         t_qs = time()
         v_model, h_model, label_model = _qubo_sample(rbm, model) # v~, h~
         total_t_qs += time() - t_qs
+
+        δ_W = zeros(size(rbm.W))
+        δ_U = zeros(size(rbm.U))
+        δ_a = zeros(size(rbm.a))
+        δ_b = zeros(size(rbm.b))
+        δ_c = zeros(size(rbm.c))
+
         for sample_i in mini_batch
             t_sample = time()
             v_data = x[sample_i]
@@ -58,20 +68,16 @@ function persistent_qubo!(
 
             # Update hyperparameter
             t_update = time()
-            update_rbm!(
-                rbm,
-                v_data,
-                h_data,
-                label_data,
-                v_model,
-                h_model,
-                label_model,
-                (learning_rate / length(mini_batch)),
-                (label_learning_rate / length(mini_batch)),
-            )
+            t_update = time()
+            δ_W += (v_data * h_data' .- v_model * h_model')
+            δ_U += (label_data * h_data' .- label_model * h_model')
+            δ_a += (v_data .- v_model)
+            δ_b += (h_data .- h_model)
+            δ_c += (label_data .- label_model)
             total_t_update += time() - t_update
         end
         t_update = time()
+        update_rbm!(rbm, δ_W, δ_U, δ_a, δ_b, δ_c, learning_rate / length(mini_batch), label_learning_rate / length(mini_batch))
         _update_qubo_model!(model, rbm)
         total_t_update += time() - t_update
     end

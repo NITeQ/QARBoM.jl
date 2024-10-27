@@ -8,11 +8,15 @@ function persistent_contrastive_divergence!(
 )
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     for mini_batch in mini_batches
-        batch_index = 1
+        index = 1
 
         t_gibbs = time()
         _update_fantasy_data!(rbm, fantasy_data)
         total_t_gibbs += time() - t_gibbs
+
+        δ_W = zeros(size(rbm.W))
+        δ_a = zeros(size(rbm.a))
+        δ_b = zeros(size(rbm.b))
 
         for sample in x[mini_batch]
             t_sample = time()
@@ -22,18 +26,17 @@ function persistent_contrastive_divergence!(
 
             # Update hyperparameter
             t_update = time()
-            update_rbm!(
-                rbm,
-                v_data,
-                h_data,
-                fantasy_data[batch_index].v,
-                fantasy_data[batch_index].h,
-                (learning_rate / length(mini_batch));
-            )
+            δ_W += (v_data * h_data' .- fantasy_data[index].v * fantasy_data[index].h')
+            δ_a += (v_data .- fantasy_data[index].v)
+            δ_b += (h_data .- fantasy_data[index].h)
             total_t_update += time() - t_update
 
-            batch_index += 1
+            index += 1
         end
+
+        t_update = time()
+        update_rbm!(rbm, δ_W, δ_a, δ_b, learning_rate / length(mini_batch))
+        total_t_update += time() - t_update
     end
     return total_t_sample, total_t_gibbs, total_t_update
 end
@@ -50,7 +53,14 @@ function persistent_contrastive_divergence!(
 )
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     for mini_batch in mini_batches
-        batch_index = 1
+        index = 1
+
+        δ_W = zeros(size(rbm.W))
+        δ_U = zeros(size(rbm.U))
+        δ_a = zeros(size(rbm.a))
+        δ_b = zeros(size(rbm.b))
+        δ_c = zeros(size(rbm.c))
+
         for sample_i in mini_batch
             t_sample = time()
             v_data = x[sample_i]
@@ -60,21 +70,19 @@ function persistent_contrastive_divergence!(
 
             # Update hyperparameter
             t_update = time()
-            update_rbm!(
-                rbm,
-                v_data,
-                h_data,
-                y_data,
-                fantasy_data[batch_index].v,
-                fantasy_data[batch_index].h,
-                fantasy_data[batch_index].y,
-                (learning_rate / length(mini_batch)),
-                (label_learning_rate / length(mini_batch)),
-            )
+            δ_W += (v_data * h_data' .- fantasy_data[index].v * fantasy_data[index].h')
+            δ_U += (y_data * h_data' .- fantasy_data[index].y * fantasy_data[index].h')
+            δ_a += (v_data .- fantasy_data[index].v)
+            δ_b += (h_data .- fantasy_data[index].h)
+            δ_c += (y_data .- fantasy_data[index].y)
             total_t_update += time() - t_update
 
-            batch_index += 1
+            index += 1
         end
+
+        t_update = time()
+        update_rbm!(rbm, δ_W, δ_U, δ_a, δ_b, δ_c, learning_rate / length(mini_batch), label_learning_rate / length(mini_batch))
+        total_t_update += time() - t_update
 
         # Update fantasy data
         t_gibbs = time()
