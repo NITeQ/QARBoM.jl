@@ -7,9 +7,8 @@ function persistent_contrastive_divergence!(
     learning_rate::Float64 = 0.1,
 )
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
-    @assert length(mini_batches) == length(fantasy_data)
     for mini_batch in mini_batches
-        batch_index = 1
+        index = 1
 
         t_gibbs = time()
         _update_fantasy_data!(rbm, fantasy_data)
@@ -27,12 +26,12 @@ function persistent_contrastive_divergence!(
 
             # Update hyperparameter
             t_update = time()
-            δ_W += (v_data * h_data' .- fantasy_data[batch_index].v * fantasy_data[batch_index].h')
-            δ_a += (v_data .- fantasy_data[batch_index].v)
-            δ_b += (h_data .- fantasy_data[batch_index].h)
+            δ_W += (v_data * h_data' .- fantasy_data[index].v * fantasy_data[index].h')
+            δ_a += (v_data .- fantasy_data[index].v)
+            δ_b += (h_data .- fantasy_data[index].h)
             total_t_update += time() - t_update
 
-            batch_index += 1
+            index += 1
         end
 
         t_update = time()
