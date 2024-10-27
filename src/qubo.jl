@@ -29,7 +29,7 @@ function _create_qubo_model(rbm::RBM, sampler, model_setup; kwargs...)
     max_visible = get(kwargs, :max_visible, nothing)
     min_visible = get(kwargs, :min_visible, nothing)
 
-    model = Model(sampler)
+    model = Model(() ->ToQUBO.Optimizer(sampler))
     model_setup(model, sampler)
     if !isnothing(max_visible) && !isnothing(min_visible)
         @variable(model, min_visible[i] <= vis[i = 1:rbm.n_visible] <= max_visible[i])
@@ -45,8 +45,11 @@ function _create_qubo_model(rbm::RBMClassifier, sampler, model_setup; kwargs...)
     max_visible = get(kwargs, :max_visible, nothing)
     min_visible = get(kwargs, :min_visible, nothing)
 
-    model = Model(() -> ToQUBO.Optimizer(sampler))
-    model_setup(model, sampler)
+    # model = Model(() -> ToQUBO.Optimizer(sampler))
+
+    model = Model(() -> ToQUBO.Optimizer(nothing))
+
+    # model_setup(model, sampler)
     if !isnothing(max_visible) && !isnothing(min_visible)
         @variable(model, min_visible[i] <= vis[i = 1:rbm.n_visible] <= max_visible[i])
     else
@@ -55,6 +58,15 @@ function _create_qubo_model(rbm::RBMClassifier, sampler, model_setup; kwargs...)
     @variable(model, label[1:rbm.n_classifiers], Bin)
     @variable(model, hid[1:rbm.n_hidden], Bin)
     @objective(model, Min, -vis' * rbm.W * hid - label' * rbm.U * hid)
+
+
+    # Generate the QUBO model running ToQUBO with no sampler
+    optimize!(model)
+    
+    embedded_sampler = model_setup(model, sampler)
+    JuMP.set_optimizer(model, () -> ToQUBO.Optimizer(sampler))
+    set_attribute(model, "sampler", embedded_sampler)
+
     return model
 end
 
