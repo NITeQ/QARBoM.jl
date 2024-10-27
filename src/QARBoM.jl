@@ -1,9 +1,9 @@
 module QARBoM
 
+using QUBO
 using Printf
 using Statistics
 using JuMP
-using ToQUBO
 using LogExpFunctions
 using CSV
 using DataFrames

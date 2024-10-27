@@ -110,24 +110,18 @@ function _qubo_sample(rbm::AbstractRBM, model)
     optimize!(model)
     v_sampled = zeros(Float64, num_visible_nodes(rbm))
     h_sampled = zeros(Float64, num_hidden_nodes(rbm))
-    total_samples = result_count(model)
-    for i in 1:total_samples
-        v_sampled .+= value.(model[:vis], result = i)
-        h_sampled .+= value.(model[:hid], result = i)
-    end
-    return v_sampled ./ total_samples, h_sampled ./ total_samples
+    h_sampled .+= value.(model[:hid], result = 1)
+    v_sampled .+= value.(model[:vis], result = 1)
+    return v_sampled, h_sampled
 end
 
-function _qubo_sample(rbm::RBMClassifier, model)
+function _qubo_sample(rbm::RBMClassifier, model; kwargs...)
     optimize!(model)
     v_sampled = zeros(Float64, num_visible_nodes(rbm))
     label_sampled = zeros(Float64, num_label_nodes(rbm))
     h_sampled = zeros(Float64, num_hidden_nodes(rbm))
-    total_samples = result_count(model)
-    for i in 1:total_samples
-        v_sampled .+= value.(model[:vis], result = i)
-        h_sampled .+= value.(model[:hid], result = i)
-        label_sampled .+= value.(model[:label], result = i)
-    end
-    return v_sampled ./ total_samples, h_sampled ./ total_samples, label_sampled ./ total_samples
+    v_sampled = value.(model[:vis], result = 1)
+    h_sampled = value.(model[:hid], result = 1)
+    label_sampled = value.(model[:label], result = 1)
+    return v_sampled, h_sampled, label_sampled
 end
