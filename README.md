@@ -55,13 +55,13 @@ BATCH_SIZE = 10
 
 QARBoM.train!(
     rbm, 
-    x_train,
+    train_data,
     CD; 
     n_epochs = N_EPOCHS,  
     cd_steps = 3, # number of gibbs sampling steps
     learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
     metrics = [MeanSquaredError], # the metrics you want to track
-    x_test_dataset = x_test,
+    x_test_dataset = test_data,
     early_stopping = true,
     file_path = "my_cd_metrics.csv",
 )
@@ -77,13 +77,13 @@ BATCH_SIZE = 10
 
 QARBoM.train!(
     rbm, 
-    x_train,
+    train_data,
     PCD; 
     n_epochs = N_EPOCHS, 
     batch_size = BATCH_SIZE, 
     learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
     metrics = [MeanSquaredError], # the metrics you want to track
-    x_test_dataset = x_test,
+    x_test_dataset = test_data,
     early_stopping = true,
     file_path = "my_pcd_metrics.csv",
 )
@@ -109,14 +109,12 @@ end
 
 QARBoM.train!(
     rbm, 
-    x_train,
+    train_data,
     QSampling; 
     n_epochs = N_EPOCHS, 
     batch_size = 5, 
     learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
-    label_learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
-    metrics = [Accuracy],
-    x_test_dataset = x_test,
+    x_test_dataset = test_data,
     early_stopping = true,
     file_path = "qubo_train.csv",
     model_setup=setup_dwave,
@@ -138,7 +136,7 @@ rbm = RBMClassifier(
 
 QARBoM.train!(
     rbm, 
-    x_train,
+    train_data,
     y_train,
     PCD; 
     n_epochs = N_EPOCHS, 
@@ -146,7 +144,7 @@ QARBoM.train!(
     learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
     label_learning_rate = [0.001/(j^0.6) for j in 1:N_EPOCHS], 
     metrics = [Accuracy],
-    x_test_dataset = x_test,
+    x_test_dataset = test_data,
     y_test_dataset = y_test,
     early_stopping = true,
     file_path = "my_pcd_metrics_classification.csv",
@@ -169,6 +167,12 @@ See the example below:
 ```julia
 using QARBoM, DWave
 
+train_data = MY_DATA_TRAIN
+test_data = MY_DATA_TEST
+
+label_train_data = MY_DATA_TRAIN
+label_test_data = MY_DATA_TEST
+
 rbm = RBMClassifier(
     10, # number of visible nodes
     5, # number of hidden nodes
@@ -176,17 +180,17 @@ rbm = RBMClassifier(
 )
 
 QARBoM.train!(
-    rbm_qubo, 
-    x_train,
-    y_train,
+    rbm, 
+    train_data,
+    label_train_data,
     QSampling; 
     n_epochs = N_EPOCHS, 
     batch_size = 5, 
     learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
     label_learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
     metrics = [Accuracy],
-    x_test_dataset = x_test,
-    y_test_dataset = y_test,
+    x_test_dataset = test_data,
+    y_test_dataset = label_test_data,
     early_stopping = true,
     file_path = "qubo_train.csv",
     model_setup=setup_dwave,
