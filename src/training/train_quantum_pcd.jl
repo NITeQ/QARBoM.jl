@@ -4,11 +4,12 @@ function persistent_qubo!(
     x,
     mini_batches::Vector{UnitRange{Int}};
     learning_rate::Float64 = 0.1,
+    kwargs...,
 )
     total_t_sample, total_t_qs, total_t_update = 0.0, 0.0, 0.0
     for mini_batch in mini_batches
         t_qs = time()
-        v_model, h_model = _qubo_sample(rbm, model) # v~, h~
+        v_model, h_model = _qubo_sample(rbm, model; kwargs...) # v~, h~
         total_t_qs += time() - t_qs
 
         δ_W = zeros(size(rbm.W))
@@ -46,11 +47,12 @@ function persistent_qubo!(
     mini_batches::Vector{UnitRange{Int}};
     learning_rate::Float64 = 0.1,
     label_learning_rate::Float64 = 0.1,
+    kwargs...,
 )
     total_t_sample, total_t_qs, total_t_update = 0.0, 0.0, 0.0
     for mini_batch in mini_batches
         t_qs = time()
-        v_model, h_model, label_model = _qubo_sample(rbm, model) # v~, h~
+        v_model, h_model, label_model = _qubo_sample(rbm, model; kwargs...) # v~, h~
         total_t_qs += time() - t_qs
 
         δ_W = zeros(size(rbm.W))
@@ -121,6 +123,7 @@ function train!(
                 x_train,
                 mini_batches;
                 learning_rate = learning_rate[epoch],
+                kwargs...,
             )
 
         total_t_sample += t_sample
@@ -259,6 +262,7 @@ function train!(
                 mini_batches;
                 learning_rate = learning_rate[epoch],
                 label_learning_rate = label_learning_rate[epoch],
+                kwargs...,
             )
 
         total_t_sample += t_sample
