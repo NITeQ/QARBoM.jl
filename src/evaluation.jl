@@ -3,14 +3,70 @@ abstract type EvaluationMethod end
 abstract type Accuracy <: EvaluationMethod end
 abstract type CrossEntropy <: EvaluationMethod end
 abstract type MeanSquaredError <: EvaluationMethod end
+abstract type FalsePositive <: EvaluationMethod end
+abstract type TruePositive <: EvaluationMethod end
+abstract type FalseNegative <: EvaluationMethod end
+abstract type TrueNegative <: EvaluationMethod end
+abstract type Precision <: EvaluationMethod end
+abstract type Recall <: EvaluationMethod end
 
-export Accuracy, MeanSquaredError, CrossEntropy
+export Accuracy, MeanSquaredError, CrossEntropy, FalsePositive, TruePositive, FalseNegative, TrueNegative, Precision, Recall
 
 function _evaluate(::Type{Accuracy}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
     sample = kwargs[:y_sample]
     predicted = kwargs[:y_pred]
     tp = all(i -> i == 1, round.(Int, sample) .== round.(Int, predicted)) ? 1 : 0
     return metrics_dict["accuracy"][epoch] += tp / dataset_size
+end
+
+function _evaluate(::Type{FalsePositive}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
+    sample = kwargs[:y_sample]
+    predicted = kwargs[:y_pred]
+    tp = 0
+    if sample[1] == 0 && predicted[1] == 1
+        tp = 1
+    end
+    return metrics_dict["false_positive"][epoch] += tp 
+end
+
+function _evaluate(::Type{TruePositive}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
+    sample = kwargs[:y_sample]
+    predicted = kwargs[:y_pred]
+    tp = 0
+    if sample[1] == 1 && predicted[1] == 1
+        tp = 1
+    end
+    return metrics_dict["true_positive"][epoch] += tp
+end
+
+function _evaluate(::Type{FalseNegative}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
+    sample = kwargs[:y_sample]
+    predicted = kwargs[:y_pred]
+    tp = 0
+    if sample[1] == 1 && predicted[1] == 0
+        tp = 1
+    end
+    return metrics_dict["false_negative"][epoch] += tp
+end
+
+function _evaluate(::Type{Precision}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
+    return metrics_dict["precision"][epoch]  = metrics_dict["true_positive"][epoch]/(metrics_dict["true_positive"][epoch] + metrics_dict["false_positive"][epoch])
+end
+
+
+function _evaluate(::Type{Recall}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
+    pre = 
+    return metrics_dict["recall"][epoch]  = metrics_dict["true_positive"][epoch]/(metrics_dict["true_positive"][epoch] + metrics_dict["false_negative"][epoch])
+end
+
+function _evaluate(::Type{TrueNegative}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
+    sample = kwargs[:y_sample]
+    predicted = kwargs[:y_pred]
+    tp = 0
+    if sample[1] == 0 && predicted[1] == 0
+        tp = 1
+    end
+    return metrics_dict["true_negative"][epoch] += tp
 end
 
 function _evaluate(::Type{MeanSquaredError}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
@@ -74,6 +130,18 @@ function _initialize_metrics(metrics::Vector{<:DataType})
             metrics_dict["mse"] = Float64[]
         elseif metric == CrossEntropy
             metrics_dict["cross_entropy"] = Float64[]
+        elseif metric == FalseNegative
+            metrics_dict["false_negative"] = Float64[]
+        elseif metric == FalsePositive
+            metrics_dict["false_positive"] = Float64[]
+        elseif metric == TrueNegative
+            metrics_dict["true_negative"] = Float64[]
+        elseif metric == TruePositive
+            metrics_dict["true_positive"] = Float64[]
+        elseif metric == Precision
+            metrics_dict["precision"] = Float64[]
+        elseif metric == Recall
+            metrics_dict["recall"] = Float64[]
         end
     end
     return metrics_dict
