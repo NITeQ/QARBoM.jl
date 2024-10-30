@@ -60,9 +60,17 @@ function _log_epoch_quantum(epoch::Int, t_sample::Float64, t_qs::Float64, t_upda
     return println("|------------------------------------------------------------------|")
 end
 
-function _log_metrics(metrics::Dict{String, Vector{Float64}}, epoch::Int)
-    for metric_name in keys(metrics)
-        println("$metric_name: $(metrics[metric_name][epoch])")
+function _log_metrics(metrics::Dict{String, Vector{Float64}}, epoch::Int,show_stats::Bool = false)
+    if show_stats == true
+        for metric_name in keys(metrics)
+            println("$metric_name: $(metrics[metric_name][epoch])")
+        end
+    else
+        for metric_name in keys(metrics)
+            if metric_name != "false_negative" && metric_name != "false_positive" && metric_name != "true_negative" && metric_name != "true_positive"
+            println("$metric_name: $(metrics[metric_name][epoch])")
+            end
+        end
     end
 end
 
