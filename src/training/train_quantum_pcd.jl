@@ -230,6 +230,7 @@ function train!(
     sampler,
     weight::Int64 = 0,
     show_stats::Bool = false,
+    kwargs...
 )
     best_rbm = copy_rbm(rbm)
     stats = [FalsePositive,FalseNegative,TruePositive,TrueNegative]
