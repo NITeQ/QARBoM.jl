@@ -259,8 +259,11 @@ function train!(
     y_test_dataset = nothing,
     file_path = "pcd_classifier_metrics.csv",
     use_weights = 0,
+    show_stats::Bool = false,
 )
     best_rbm = copy_rbm(rbm)
+    stats = [FalsePositive,FalseNegative,TruePositive,TrueNegative]
+    metrics = append!(stats,metrics)
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
@@ -289,7 +292,7 @@ function train!(
         total_t_sample += t_sample
         total_t_gibbs += t_gibbs
         total_t_update += t_update
-
+        
         if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
             evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict, epoch)
         else
@@ -312,7 +315,7 @@ function train!(
         end
 
         _log_epoch(epoch, t_sample, t_gibbs, t_update, total_t_sample + total_t_gibbs + total_t_update)
-        _log_metrics(metrics_dict, epoch)
+        _log_metrics(metrics_dict, epoch, show_stats)
     end
 
     if store_best_rbm

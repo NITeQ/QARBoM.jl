@@ -229,9 +229,11 @@ function train!(
     model_setup::Function,
     sampler,
     weight::Int64 = 0,
-    kwargs...,
+    show_stats::Bool = false,
 )
     best_rbm = copy_rbm(rbm)
+    stats = [FalsePositive,FalseNegative,TruePositive,TrueNegative]
+    metrics = append!(stats,metrics)
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
@@ -285,7 +287,7 @@ function train!(
         end
 
         _log_epoch_quantum(epoch, t_sample, t_qs, t_update, total_t_sample + total_t_qs + total_t_update)
-        _log_metrics(metrics_dict, epoch)
+        _log_metrics(metrics_dict, epoch,show_stats)
     end
 
     if store_best_rbm

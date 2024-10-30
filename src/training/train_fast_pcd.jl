@@ -304,8 +304,11 @@ function train!(
     x_test_dataset = nothing,
     y_test_dataset = nothing,
     file_path = "fast_pcd_classifier_metrics.csv",
+    show_stats::Bool = false,
 )
     best_rbm = copy_rbm(rbm)
+    stats = [FalsePositive,FalseNegative,TruePositive,TrueNegative]
+    metrics = append!(stats,metrics)
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
@@ -358,7 +361,7 @@ function train!(
         end
 
         _log_epoch(epoch, t_sample, t_gibbs, t_update, total_t_sample + total_t_gibbs + total_t_update)
-        _log_metrics(metrics_dict, epoch)
+        _log_metrics(metrics_dict, epoch, show_stats)
     end
 
     if store_best_rbm
