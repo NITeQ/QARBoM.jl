@@ -46,7 +46,6 @@ function _create_qubo_model(rbm::RBMClassifier, sampler, model_setup; kwargs...)
     min_visible = get(kwargs, :min_visible, nothing)
 
     model = Model(() -> ToQUBO.Optimizer(sampler))
-    model_setup(model, sampler)
     if !isnothing(max_visible) && !isnothing(min_visible)
         @variable(model, min_visible[i] <= vis[i = 1:rbm.n_visible] <= max_visible[i])
     else
@@ -55,6 +54,7 @@ function _create_qubo_model(rbm::RBMClassifier, sampler, model_setup; kwargs...)
     @variable(model, label[1:rbm.n_classifiers], Bin)
     @variable(model, hid[1:rbm.n_hidden], Bin)
     @objective(model, Min, -vis' * rbm.W * hid - label' * rbm.U * hid)
+    model_setup(model, sampler)
     return model
 end
 
