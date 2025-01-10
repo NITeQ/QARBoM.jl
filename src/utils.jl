@@ -62,7 +62,7 @@ end
 
 function _log_metrics(metrics::Dict{String, Vector{Float64}}, epoch::Int)
     for metric_name in keys(metrics)
-        println("$metric_name: $(metrics[metric_name][epoch])")
+        println("$metric_name: $(metrics[metric_name][end])")
     end
 end
 

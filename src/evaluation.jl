@@ -6,23 +6,23 @@ abstract type MeanSquaredError <: EvaluationMethod end
 
 export Accuracy, MeanSquaredError, CrossEntropy
 
-function _evaluate(::Type{Accuracy}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
+function _evaluate(::Type{Accuracy}, metrics_dict::Dict{String, Vector{Float64}}, dataset_size::Int; kwargs...)
     sample = kwargs[:y_sample]
     predicted = kwargs[:y_pred]
     tp = all(i -> i == 1, round.(Int, sample) .== round.(Int, predicted)) ? 1 : 0
-    return metrics_dict["accuracy"][epoch] += tp / dataset_size
+    return metrics_dict["accuracy"][end] += tp / dataset_size
 end
 
-function _evaluate(::Type{MeanSquaredError}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
+function _evaluate(::Type{MeanSquaredError}, metrics_dict::Dict{String, Vector{Float64}}, dataset_size::Int; kwargs...)
     sample = kwargs[:x_sample]
     predicted = kwargs[:x_pred]
-    return metrics_dict["mse"][epoch] += sum((sample .- predicted) .^ 2) / dataset_size
+    return metrics_dict["mse"][end] += sum((sample .- predicted) .^ 2) / dataset_size
 end
 
-function _evaluate(::Type{CrossEntropy}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
+function _evaluate(::Type{CrossEntropy}, metrics_dict::Dict{String, Vector{Float64}}, dataset_size::Int; kwargs...)
     sample = kwargs[:y_sample]
     predicted = kwargs[:y_pred]
-    return metrics_dict["cross_entropy"][epoch] += sum(sample .* log.(predicted) .+ (1 .- sample) .* log.(1 .- predicted)) / dataset_size
+    return metrics_dict["cross_entropy"][end] += sum(sample .* log.(predicted) .+ (1 .- sample) .* log.(1 .- predicted)) / dataset_size
 end
 
 function evaluate(
@@ -31,7 +31,6 @@ function evaluate(
     x_dataset::Vector{Vector{T}},
     y_dataset::Vector{Vector{T}},
     metrics_dict::Dict{String, Vector{Float64}},
-    epoch::Int,
 ) where {T <: Union{Float64, Int}}
     dataset_size = length(x_dataset)
     for sample_i in eachindex(x_dataset)
@@ -42,7 +41,7 @@ function evaluate(
         rounded_y_pred = [(y_pred[i] == max_val) ? 1 : 0 for i in eachindex(y_pred)]
 
         for metric in metrics
-            _evaluate(metric, metrics_dict, epoch, dataset_size; y_sample = label, y_pred = rounded_y_pred)
+            _evaluate(metric, metrics_dict, dataset_size; y_sample = label, y_pred = rounded_y_pred)
         end
     end
 end
@@ -52,7 +51,6 @@ function evaluate(
     metrics::Vector{<:DataType},
     x_dataset::Vector{Vector{T}},
     metrics_dict::Dict{String, Vector{Float64}},
-    epoch::Int,
 ) where {T <: Union{Float64, Int}}
     dataset_size = length(x_dataset)
     for sample_i in eachindex(x_dataset)
@@ -60,7 +58,7 @@ function evaluate(
         vis_pred = QARBoM.reconstruct(rbm, vis)
 
         for metric in metrics
-            _evaluate(metric, metrics_dict, epoch, dataset_size; x_sample = vis, x_pred = vis_pred)
+            _evaluate(metric, metrics_dict, dataset_size; x_sample = vis, x_pred = vis_pred)
         end
     end
 end
@@ -79,37 +77,37 @@ function _initialize_metrics(metrics::Vector{<:DataType})
     return metrics_dict
 end
 
-function _diverged(metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, ::Type{MeanSquaredError})
-    if epoch == 1
+function _diverged(metrics_dict::Dict{String, Vector{Float64}}, ::Type{MeanSquaredError})
+    if length(metrics_dict["mse"]) == 1
         return false
     end
-    if metrics_dict["mse"][epoch] > metrics_dict["mse"][epoch-1]
+    if metrics_dict["mse"][end] > metrics_dict["mse"][end-1]
         return true
-    elseif metrics_dict["mse"][epoch] > minimum(metrics_dict["mse"])
+    elseif metrics_dict["mse"][end] > minimum(metrics_dict["mse"])
         return true
     end
     return false
 end
 
-function _diverged(metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, ::Type{CrossEntropy})
-    if epoch == 1
+function _diverged(metrics_dict::Dict{String, Vector{Float64}}, ::Type{CrossEntropy})
+    if length(metrics_dict["cross_entropy"]) == 1
         return false
     end
-    if metrics_dict["cross_entropy"][epoch] > metrics_dict["cross_entropy"][epoch-1]
+    if metrics_dict["cross_entropy"][end] > metrics_dict["cross_entropy"][end-1]
         return true
-    elseif metrics_dict["cross_entropy"][epoch] > minimum(metrics_dict["cross_entropy"])
+    elseif metrics_dict["cross_entropy"][end] > minimum(metrics_dict["cross_entropy"])
         return true
     end
     return false
 end
 
-function _diverged(metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, ::Type{Accuracy})
-    if epoch == 1
+function _diverged(metrics_dict::Dict{String, Vector{Float64}}, ::Type{Accuracy})
+    if length(metrics_dict["accuracy"]) == 1
         return false
     end
-    if metrics_dict["accuracy"][epoch] < metrics_dict["accuracy"][epoch-1]
+    if metrics_dict["accuracy"][end] < metrics_dict["accuracy"][end-1]
         return true
-    elseif metrics_dict["accuracy"][epoch] < maximum(metrics_dict["accuracy"])
+    elseif metrics_dict["accuracy"][end] < maximum(metrics_dict["accuracy"])
         return true
     end
     return false

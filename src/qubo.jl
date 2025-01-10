@@ -120,8 +120,12 @@ function _qubo_sample(rbm::RBMClassifier, model; kwargs...)
     v_sampled = zeros(Float64, num_visible_nodes(rbm))
     label_sampled = zeros(Float64, num_label_nodes(rbm))
     h_sampled = zeros(Float64, num_hidden_nodes(rbm))
-    v_sampled = value.(model[:vis], result = 1)
-    h_sampled = value.(model[:hid], result = 1)
-    label_sampled = value.(model[:label], result = 1)
+    total_reads = reads(unsafe_backend(model).optimizer)
+    for i in 1:result_count(model)
+        sample_reads = reads(unsafe_backend(model).optimizer, i)
+        v_sampled .+= value.(model[:vis], result = i) .* (sample_reads / total_reads)
+        label_sampled .+= value.(model[:label], result = i) .* (sample_reads / total_reads)
+        h_sampled .+= value.(model[:hid], result = i) .* (sample_reads / total_reads)
+    end
     return v_sampled, h_sampled, label_sampled
 end
