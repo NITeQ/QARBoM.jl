@@ -9,6 +9,8 @@
 
 [build-img]: https://github.com/NITeQ/QARBoM.jl/actions/workflows/ci.yml/badge.svg?branch=main
 ![Build Status][build-img]
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14841099.svg)](https://doi.org/10.5281/zenodo.14841099)
+
 
 </div>
 
