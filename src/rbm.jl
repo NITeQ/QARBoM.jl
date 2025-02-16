@@ -7,7 +7,27 @@ mutable struct RBM <: AbstractRBM
     n_hidden::Int # number of hidden units
 end
 
+# Gaussian-Bernoulli RBM
+mutable struct GRBM <: AbstractRBM
+    W::Matrix{Float64} # weight matrix
+    a::Vector{Float64} # visible bias
+    b::Vector{Float64} # hidden bias
+    n_visible::Int # number of visible units
+    n_hidden::Int # number of hidden units
+end
+
 mutable struct RBMClassifier <: AbstractRBM
+    W::Matrix{Float64} # visble-hidden weight matrix
+    U::Matrix{Float64} # classifier-hidden weight matrix
+    a::Vector{Float64} # visible bias
+    b::Vector{Float64} # hidden bias
+    c::Vector{Float64} # classifier bias
+    n_visible::Int # number of visible units
+    n_hidden::Int # number of hidden units
+    n_classifiers::Int # number of classifier bits
+end
+
+mutable struct GRBMClassifier <: AbstractRBM
     W::Matrix{Float64} # visble-hidden weight matrix
     U::Matrix{Float64} # classifier-hidden weight matrix
     a::Vector{Float64} # visible bias
@@ -31,6 +51,19 @@ function RBM(n_visible::Int, n_hidden::Int, W::Matrix{Float64})
     return RBM(copy(W), a, b, n_visible, n_hidden)
 end
 
+function GRBM(n_visible::Int, n_hidden::Int)
+    W = randn(n_visible, n_hidden)
+    a = zeros(n_visible)
+    b = zeros(n_hidden)
+    return GRBM(W, a, b, n_visible, n_hidden)
+end
+
+function GRBM(n_visible::Int, n_hidden::Int, W::Matrix{Float64})
+    a = zeros(n_visible)
+    b = zeros(n_hidden)
+    return GRBM(copy(W), a, b, n_visible, n_hidden)
+end
+
 function RBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int)
     W = randn(n_visible, n_hidden)
     U = randn(n_classifiers, n_hidden)
@@ -47,8 +80,24 @@ function RBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, W::Mat
     return RBMClassifier(copy(W), copy(U), a, b, c, n_visible, n_hidden, n_classifiers)
 end
 
+function GRBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int)
+    W = randn(n_visible, n_hidden)
+    U = randn(n_classifiers, n_hidden)
+    a = zeros(n_visible)
+    b = zeros(n_hidden)
+    c = zeros(n_classifiers)
+    return GRBMClassifier(W, U, a, b, c, n_visible, n_hidden, n_classifiers)
+end
+
+function GRBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, W::Matrix{Float64}, U::Matrix{Float64})
+    a = zeros(n_visible)
+    b = zeros(n_hidden)
+    c = zeros(n_classifiers)
+    return GRBMClassifier(copy(W), copy(U), a, b, c, n_visible, n_hidden, n_classifiers)
+end
+
 function update_rbm!(
-    rbm::RBMClassifier,
+    rbm::Union{RBMClassifier, GRBMClassifier},
     v_data::Vector{<:Number},
     h_data::Vector{<:Number},
     y_data::Vector{<:Number},
@@ -67,7 +116,7 @@ function update_rbm!(
 end
 
 function update_rbm!(
-    rbm::RBMClassifier,
+    rbm::Union{RBMClassifier, GRBMClassifier},
     δ_W::Matrix{Float64},
     δ_U::Matrix{Float64},
     δ_a::Vector{Float64},
@@ -116,10 +165,10 @@ conditional_prob_h(rbm::AbstractRBM, v::Vector{<:Number}) = _sigmoid.(rbm.b .+ r
 conditional_prob_h(rbm::AbstractRBM, v::Vector{<:Number}, W_fast::Matrix{Float64}, b_fast::Vector{Float64}) =
     _sigmoid.(rbm.b .+ b_fast .+ (rbm.W .+ W_fast)' * v)
 
-conditional_prob_h(rbm::RBMClassifier, v::Vector{<:Number}, y::Vector{<:Number}) = _sigmoid.(rbm.b .+ rbm.W' * v .+ rbm.U' * y)
+conditional_prob_h(rbm::Union{RBMClassifier, GRBMClassifier}, v::Vector{<:Number}, y::Vector{<:Number}) = _sigmoid.(rbm.b .+ rbm.W' * v .+ rbm.U' * y)
 
 conditional_prob_h(
-    rbm::RBMClassifier,
+    rbm::Union{RBMClassifier, GRBMClassifier},
     v::Vector{<:Number},
     y::Vector{<:Number},
     W_fast::Matrix{Float64},
@@ -131,6 +180,10 @@ conditional_prob_v(rbm::AbstractRBM, h::Vector{<:Number}) = _sigmoid.(rbm.a .+ r
 
 conditional_prob_v(rbm::AbstractRBM, h::Vector{<:Number}, W_fast::Matrix{Float64}, a_fast::Vector{Float64}) =
     _sigmoid.(rbm.a .+ a_fast .+ (rbm.W .+ W_fast) * h)
+
+conditional_prob_v(rbm::Union{GRBMClassifier, GRBM}, h::Vector{<:Number}) = Normal.(rbm.a .+ rbm.W * h, 1.0)
+conditional_prob_v(rbm::Union{GRBMClassifier, GRBM}, h::Vector{<:Number}, W_fast::Matrix{Float64}, a_fast::Vector{Float64}) =
+    Normal.(rbm.a .+ a_fast .+ (rbm.W .+ W_fast) * h, 1.0)
 
 function conditional_prob_y_given_v(rbm::RBMClassifier, v::Vector{<:Number})
     class_probabilities = Vector{Float64}(undef, rbm.n_classifiers)
