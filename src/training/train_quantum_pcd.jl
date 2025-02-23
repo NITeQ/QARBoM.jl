@@ -40,7 +40,7 @@ function persistent_qubo!(
 end
 
 function persistent_qubo!(
-    rbm::RBMClassifier,
+    rbm::RBMClassifiers,
     model,
     x,
     label,
@@ -168,7 +168,7 @@ end
 
 """
     train!(
-        rbm::RBMClassifier,
+        rbm::RBMClassifiers,
         x_train,
         label_train,
         ::Type{QSampling};
@@ -217,7 +217,7 @@ Train an RBMClassifier using Quantum sampling.
       + `min_visible::Vector{Float64}`: The minimum value for the visible nodes.
 """
 function train!(
-    rbm::RBMClassifier,
+    rbm::RBMClassifiers,
     x_train,
     label_train,
     ::Type{QSampling};

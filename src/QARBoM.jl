@@ -19,6 +19,8 @@ abstract type AbstractDBN end
 abstract type AbstractRBM end
 abstract type DBNLayer end
 
+RBMClassifiers = Union{RBMClassifier, GRBMClassifier}
+
 export RBM, RBMClassifier, GRBM, GRBMClassifier
 export QSampling, PCD, CD, FastPCD
 

@@ -43,7 +43,7 @@ end
 
 # PCD-K mini-batch algorithm
 function persistent_contrastive_divergence!(
-    rbm::RBMClassifier,
+    rbm::Union{RBMClassifier, GRBMClassifier},
     x,
     label,
     mini_batches::Vector{UnitRange{Int}},
@@ -208,7 +208,7 @@ end
 
 """
     train!(
-        rbm::RBMClassifier,
+        rbm::Union{RBMClassifier, GRBMClassifier},
         x_train,
         label_train,
         ::Type{PCD};
@@ -248,7 +248,7 @@ Train an RBM classifier using the Persistent Contrastive Divergence (PCD) algori
   - `file_path`: The file path to store the metrics.
 """
 function train!(
-    rbm::RBMClassifier,
+    rbm::Union{RBMClassifier, GRBMClassifier},
     x_train,
     label_train,
     ::Type{PCD};

@@ -16,7 +16,7 @@ function _update_fantasy_data!(rbm::AbstractRBM, fantasy_data::Vector{FantasyDat
     end
 end
 
-function _update_fantasy_data!(rbm::RBMClassifier, fantasy_data::Vector{FantasyDataClassifier})
+function _update_fantasy_data!(rbm::Union{RBMClassifier, GRBMClassifier}, fantasy_data::Vector{FantasyDataClassifier})
     for i in 1:length(fantasy_data)
         fantasy_data[i].h = gibbs_sample_hidden(rbm, fantasy_data[i].v, fantasy_data[i].y)
         fantasy_data[i].v = gibbs_sample_visible(rbm, fantasy_data[i].h)
@@ -38,7 +38,7 @@ function _update_fantasy_data!(
 end
 
 function _update_fantasy_data!(
-    rbm::RBMClassifier,
+    rbm::Union{RBMClassifier, GRBMClassifier},
     fantasy_data::Vector{FantasyDataClassifier},
     W_fast::Matrix{Float64},
     U_fast::Matrix{Float64},
@@ -75,7 +75,7 @@ function _init_fantasy_data(rbm::AbstractRBM, batch_size::Int)
     return fantasy_data
 end
 
-function _init_fantasy_data(rbm::RBMClassifier, batch_size::Int)
+function _init_fantasy_data(rbm::Union{RBMClassifier, GRBMClassifier}, batch_size::Int)
     fantasy_data = Vector{FantasyDataClassifier}(undef, batch_size)
     for i in 1:batch_size
         fantasy_data[i] =

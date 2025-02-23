@@ -55,7 +55,7 @@ function fast_persistent_contrastive_divergence!(
 end
 
 function fast_persistent_contrastive_divergence!(
-    rbm::RBMClassifier,
+    rbm::RBMClassifiers,
     x,
     label,
     mini_batches::Vector{UnitRange{Int}},
@@ -242,7 +242,7 @@ end
 
 """
     train!(
-        rbm::RBMClassifier,
+        rbm::Union{RBMClassifier, GRBMClassifier},
         x_train,
         label_train,
         ::Type{FastPCD};
@@ -286,7 +286,7 @@ Tieleman and Hinton (2009) "Using fast weights to improve persistent contrastive
   - `file_path`: The file path to save the metrics.
 """
 function train!(
-    rbm::RBMClassifier,
+    rbm::RBMClassifiers,
     x_train,
     label_train,
     ::Type{FastPCD};

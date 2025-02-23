@@ -181,11 +181,11 @@ conditional_prob_v(rbm::AbstractRBM, h::Vector{<:Number}) = _sigmoid.(rbm.a .+ r
 conditional_prob_v(rbm::AbstractRBM, h::Vector{<:Number}, W_fast::Matrix{Float64}, a_fast::Vector{Float64}) =
     _sigmoid.(rbm.a .+ a_fast .+ (rbm.W .+ W_fast) * h)
 
-conditional_prob_v(rbm::Union{GRBMClassifier, GRBM}, h::Vector{<:Number}) = Normal.(rbm.a .+ rbm.W * h, 1.0)
+conditional_prob_v(rbm::Union{GRBMClassifier, GRBM}, h::Vector{<:Number}) = rand.(Normal.(rbm.a .+ rbm.W * h, 1.0))
 conditional_prob_v(rbm::Union{GRBMClassifier, GRBM}, h::Vector{<:Number}, W_fast::Matrix{Float64}, a_fast::Vector{Float64}) =
-    Normal.(rbm.a .+ a_fast .+ (rbm.W .+ W_fast) * h, 1.0)
+    rand.(Normal.(rbm.a .+ a_fast .+ (rbm.W .+ W_fast) * h, 1.0))
 
-function conditional_prob_y_given_v(rbm::RBMClassifier, v::Vector{<:Number})
+function conditional_prob_y_given_v(rbm::Union{RBMClassifier, GRBMClassifier}, v::Vector{<:Number})
     class_probabilities = Vector{Float64}(undef, rbm.n_classifiers)
 
     for y_i in 1:rbm.n_classifiers
@@ -197,7 +197,7 @@ function conditional_prob_y_given_v(rbm::RBMClassifier, v::Vector{<:Number})
     return exp.(class_probabilities .- log_denominator)
 end
 
-function conditional_prob_y_given_h(rbm::RBMClassifier, h::Vector{<:Number})
+function conditional_prob_y_given_h(rbm::Union{RBMClassifier, GRBMClassifier}, h::Vector{<:Number})
     # Compute the log of the numerator
     log_numerator = rbm.c .+ rbm.U * h
 
@@ -209,7 +209,7 @@ function conditional_prob_y_given_h(rbm::RBMClassifier, h::Vector{<:Number})
 end
 
 function conditional_prob_y_given_h(
-    rbm::RBMClassifier,
+    rbm::Union{RBMClassifier, GRBMClassifier},
     h::Vector{<:Number},
     W_fast::Matrix{Float64},
     c_fast::Vector{Float64},
@@ -227,7 +227,7 @@ function reconstruct(rbm::AbstractRBM, v::Vector{<:Number})
     return v_reconstructed
 end
 
-function classify(rbm::RBMClassifier, v::Vector{<:Number})
+function classify(rbm::RBMClassifiers, v::Vector{<:Number})
     y = conditional_prob_y_given_v(rbm, v)
     return y
 end
@@ -249,7 +249,7 @@ function copy_rbm(rbm::RBMClassifier)
     return RBMClassifier(copy(rbm.W), copy(rbm.U), copy(rbm.a), copy(rbm.b), copy(rbm.c), rbm.n_visible, rbm.n_hidden, rbm.n_classifiers)
 end
 
-function copy_rbm!(rbm_src::RBMClassifier, rbm_target::RBMClassifier)
+function copy_rbm!(rbm_src::RBMClassifiers, rbm_target::RBMClassifier)
     rbm_target.W .= rbm_src.W
     rbm_target.U .= rbm_src.U
     rbm_target.a .= rbm_src.a
