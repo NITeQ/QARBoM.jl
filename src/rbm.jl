@@ -38,6 +38,8 @@ mutable struct GRBMClassifier <: AbstractRBM
     n_classifiers::Int # number of classifier bits
 end
 
+const RBMClassifiers = Union{RBMClassifier, GRBMClassifier}
+
 function RBM(n_visible::Int, n_hidden::Int)
     W = randn(n_visible, n_hidden)
     a = zeros(n_visible)
@@ -165,7 +167,8 @@ conditional_prob_h(rbm::AbstractRBM, v::Vector{<:Number}) = _sigmoid.(rbm.b .+ r
 conditional_prob_h(rbm::AbstractRBM, v::Vector{<:Number}, W_fast::Matrix{Float64}, b_fast::Vector{Float64}) =
     _sigmoid.(rbm.b .+ b_fast .+ (rbm.W .+ W_fast)' * v)
 
-conditional_prob_h(rbm::Union{RBMClassifier, GRBMClassifier}, v::Vector{<:Number}, y::Vector{<:Number}) = _sigmoid.(rbm.b .+ rbm.W' * v .+ rbm.U' * y)
+conditional_prob_h(rbm::Union{RBMClassifier, GRBMClassifier}, v::Vector{<:Number}, y::Vector{<:Number}) =
+    _sigmoid.(rbm.b .+ rbm.W' * v .+ rbm.U' * y)
 
 conditional_prob_h(
     rbm::Union{RBMClassifier, GRBMClassifier},
