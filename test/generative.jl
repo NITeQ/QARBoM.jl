@@ -11,7 +11,7 @@ function test_cd()
         x_train,
         CD;
         n_epochs = 1000,
-        cd_steps = 3, # number of gibbs sampling steps
+        gibbs_steps = 3, # number of gibbs sampling steps
         learning_rate = [0.01 / (j^0.8) for j in 1:1000],
         early_stopping = true,
     )

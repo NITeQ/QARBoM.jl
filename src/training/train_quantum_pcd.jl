@@ -173,6 +173,7 @@ end
         label_train,
         ::Type{QSampling};
         n_epochs::Int,
+        gibbs_steps::Int,
         batch_size::Int,
         learning_rate::Vector{Float64},
         label_learning_rate::Vector{Float64},
@@ -198,6 +199,7 @@ Train an RBMClassifier using Quantum sampling.
   - `x_train`: The training data.
   - `label_train`: The training labels.
   - `n_epochs::Int`: The number of epochs to train the RBM.
+  - `gibbs_steps::Int`: The number of Gibbs steps to use.
   - `batch_size::Int`: The size of the mini-batches.
   - `learning_rate::Vector{Float64}`: The learning rate for each epoch.
   - `label_learning_rate::Vector{Float64}`: The learning rate for the labels for each epoch.

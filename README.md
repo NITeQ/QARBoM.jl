@@ -60,7 +60,7 @@ QARBoM.train!(
     train_data,
     CD; 
     n_epochs = N_EPOCHS,  
-    cd_steps = 3, # number of gibbs sampling steps
+    gibbs_steps = 3, # number of gibbs sampling steps
     learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
     metrics = [MeanSquaredError], # the metrics you want to track
     x_test_dataset = test_data,

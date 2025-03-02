@@ -4,6 +4,7 @@ function persistent_contrastive_divergence!(
     x,
     mini_batches::Vector{UnitRange{Int}},
     fantasy_data::Vector{FantasyData};
+    steps::Int = 1,
     learning_rate::Float64 = 0.1,
 )
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
@@ -11,7 +12,7 @@ function persistent_contrastive_divergence!(
         index = 1
 
         t_gibbs = time()
-        _update_fantasy_data!(rbm, fantasy_data)
+        _update_fantasy_data!(rbm, fantasy_data, steps)
         total_t_gibbs += time() - t_gibbs
 
         δ_W = zeros(size(rbm.W))
@@ -48,6 +49,7 @@ function persistent_contrastive_divergence!(
     label,
     mini_batches::Vector{UnitRange{Int}},
     fantasy_data::Vector{FantasyDataClassifier};
+    steps::Int = 1,
     learning_rate::Float64 = 0.1,
     label_learning_rate::Float64 = 0.1,
 )
@@ -86,7 +88,7 @@ function persistent_contrastive_divergence!(
 
         # Update fantasy data
         t_gibbs = time()
-        _update_fantasy_data!(rbm, fantasy_data)
+        _update_fantasy_data!(rbm, fantasy_data, steps)
         total_t_gibbs += time() - t_gibbs
     end
     return total_t_sample, total_t_gibbs, total_t_update
@@ -133,6 +135,7 @@ function train!(
     x_train,
     ::Type{PCD};
     n_epochs::Int,
+    gibbs_steps::Int = 1,
     batch_size::Int,
     learning_rate::Vector{Float64},
     metrics::Vector{<:DataType} = [MeanSquaredError],
@@ -163,6 +166,7 @@ function train!(
             x_train,
             mini_batches,
             fantasy_data;
+            steps = gibbs_steps,
             learning_rate = learning_rate[epoch],
         )
 
@@ -253,6 +257,7 @@ function train!(
     label_train,
     ::Type{PCD};
     n_epochs::Int,
+    gibbs_steps::Int = 1,
     batch_size::Int,
     learning_rate::Vector{Float64},
     label_learning_rate::Vector{Float64},
@@ -286,6 +291,7 @@ function train!(
             label_train,
             mini_batches,
             fantasy_data;
+            steps = gibbs_steps,
             learning_rate = learning_rate[epoch],
             label_learning_rate = label_learning_rate[epoch],
         )

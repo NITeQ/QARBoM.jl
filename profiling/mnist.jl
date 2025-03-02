@@ -20,7 +20,7 @@ Profile.clear()
     x_bin,
     QARBoM.CD();
     n_epochs = 20,
-    cd_steps = 3,
+    gibbs_steps = 3,
     learning_rate = 0.01,
 )
 
