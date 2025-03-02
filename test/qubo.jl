@@ -15,7 +15,7 @@ function test_qubo()
     x_bin = [vec(round.(Int, x_test[:, :, i])) for i in 1:100]
 
     # Train RBM
-    return QARBoM.train(rbm, x_bin, QARBoM.CD(); n_epochs = 10, cd_steps = 1, learning_rate = 0.1)
+    return QARBoM.train(rbm, x_bin, QARBoM.CD(); n_epochs = 10, gibbs_steps = 1, learning_rate = 0.1)
 end
 
 test_qubo()

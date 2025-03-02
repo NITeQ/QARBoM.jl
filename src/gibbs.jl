@@ -15,6 +15,10 @@ function gibbs_sample_visible(rbm::AbstractRBM, h::Vector{<:Number})
     return [rand() < p ? 1 : 0 for p in probs]
 end
 
+function gibbs_sample_visible(rbm::Union{GRBM, GRBMClassifier}, h::Vector{<:Number})
+    return conditional_prob_v(rbm, h)
+end
+
 function gibbs_sample_visible(rbm::AbstractRBM, h::Vector{<:Number}, W_fast::Matrix{Float64}, a_fast::Vector{Float64})
     probs = conditional_prob_v(rbm, h, W_fast, a_fast)
     return [rand() < p ? 1 : 0 for p in probs]
@@ -22,13 +26,13 @@ end
 
 # for classification
 
-function gibbs_sample_hidden(rbm::RBMClassifier, v::Vector{<:Number}, y::Vector{<:Number})
+function gibbs_sample_hidden(rbm::Union{RBMClassifier, GRBMClassifier}, v::Vector{<:Number}, y::Vector{<:Number})
     probs = conditional_prob_h(rbm, v, y)
     return [rand() < p ? 1 : 0 for p in probs]
 end
 
 function gibbs_sample_hidden(
-    rbm::RBMClassifier,
+    rbm::Union{RBMClassifier, GRBMClassifier},
     v::Vector{<:Number},
     y::Vector{<:Number},
     W_fast::Matrix{Float64},
@@ -39,12 +43,12 @@ function gibbs_sample_hidden(
     return [rand() < p ? 1 : 0 for p in probs]
 end
 
-function gibbs_sample_label(rbm::RBMClassifier, h::Vector{<:Number})
+function gibbs_sample_label(rbm::Union{RBMClassifier, GRBMClassifier}, h::Vector{<:Number})
     probs = conditional_prob_y_given_h(rbm, h)
     return [rand() < p ? 1 : 0 for p in probs]
 end
 
-function gibbs_sample_label(rbm::RBMClassifier, h::Vector{<:Number}, W_fast::Matrix{Float64}, c_fast::Vector{Float64})
+function gibbs_sample_label(rbm::Union{RBMClassifier, GRBMClassifier}, h::Vector{<:Number}, W_fast::Matrix{Float64}, c_fast::Vector{Float64})
     probs = conditional_prob_y_given_h(rbm, h, W_fast, c_fast)
     return [rand() < p ? 1 : 0 for p in probs]
 end

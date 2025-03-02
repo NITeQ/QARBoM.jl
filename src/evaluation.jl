@@ -26,7 +26,7 @@ function _evaluate(::Type{CrossEntropy}, metrics_dict::Dict{String, Vector{Float
 end
 
 function evaluate(
-    rbm::RBMClassifier,
+    rbm::Union{RBMClassifier, GRBMClassifier},
     metrics::Vector{<:DataType},
     x_dataset::Vector{Vector{T}},
     y_dataset::Vector{Vector{T}},

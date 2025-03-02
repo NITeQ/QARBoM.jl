@@ -20,7 +20,7 @@ function contrastive_divergence!(rbm::AbstractRBM, x; steps::Int, learning_rate:
     return total_t_sample, total_t_gibbs, total_t_update
 end
 
-function contrastive_divergence!(rbm::RBMClassifier, x, y; steps::Int, learning_rate::Float64 = 0.1, label_learning_rate::Float64 = 0.1)
+function contrastive_divergence!(rbm::RBMClassifiers, x, y; steps::Int, learning_rate::Float64 = 0.1, label_learning_rate::Float64 = 0.1)
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     for sample_i in eachindex(x)
         v_data = x[sample_i]
@@ -47,7 +47,7 @@ function train!(
     x_train,
     ::Type{CD};
     n_epochs::Int,
-    cd_steps::Int = 3,
+    gibbs_steps::Int = 3,
     learning_rate::Vector{Float64},
     metrics::Vector{<:DataType} = [MeanSquaredError],
     early_stopping::Bool = false,
@@ -71,7 +71,7 @@ function train!(
         t_sample, t_gibbs, t_update = contrastive_divergence!(
             rbm,
             x_train;
-            steps = cd_steps,
+            steps = gibbs_steps,
             learning_rate = learning_rate[epoch],
         )
         total_t_sample += t_sample
@@ -114,12 +114,12 @@ function train!(
 end
 
 function train!(
-    rbm::RBMClassifier,
+    rbm::RBMClassifiers,
     x_train,
     label_train,
     ::Type{CD};
     n_epochs::Int,
-    cd_steps::Int = 3,
+    gibbs_steps::Int = 3,
     learning_rate::Vector{Float64},
     label_learning_rate::Vector{Float64},
     metrics::Vector{<:DataType} = [Accuracy],
@@ -146,7 +146,7 @@ function train!(
             rbm,
             x_train,
             label_train;
-            steps = cd_steps,
+            steps = gibbs_steps,
             learning_rate = learning_rate[epoch],
             label_learning_rate = label_learning_rate[epoch],
         )
