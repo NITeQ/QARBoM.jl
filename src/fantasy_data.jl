@@ -25,7 +25,7 @@ function _update_fantasy_data!(rbm::Union{RBMClassifier, GRBMClassifier}, fantas
             fantasy_data[i].v = gibbs_sample_visible(rbm, fantasy_data[i].h)
             fantasy_data[i].y = gibbs_sample_label(rbm, fantasy_data[i].h)
         end
-    end 
+    end
 end
 
 function _update_fantasy_data!(
