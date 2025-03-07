@@ -38,8 +38,6 @@ mutable struct GRBMClassifier <: AbstractRBM
     n_classifiers::Int # number of classifier bits
 end
 
-const RBMClassifiers = Union{RBMClassifier, GRBMClassifier}
-
 function RBM(n_visible::Int, n_hidden::Int)
     W = randn(n_visible, n_hidden)
     a = zeros(n_visible)
@@ -167,8 +165,7 @@ conditional_prob_h(rbm::AbstractRBM, v::Vector{<:Number}) = _sigmoid.(rbm.b .+ r
 conditional_prob_h(rbm::AbstractRBM, v::Vector{<:Number}, W_fast::Matrix{Float64}, b_fast::Vector{Float64}) =
     _sigmoid.(rbm.b .+ b_fast .+ (rbm.W .+ W_fast)' * v)
 
-conditional_prob_h(rbm::Union{RBMClassifier, GRBMClassifier}, v::Vector{<:Number}, y::Vector{<:Number}) =
-    _sigmoid.(rbm.b .+ rbm.W' * v .+ rbm.U' * y)
+conditional_prob_h(rbm::Union{RBMClassifier, GRBMClassifier}, v::Vector{<:Number}, y::Vector{<:Number}) = _sigmoid.(rbm.b .+ rbm.W' * v .+ rbm.U' * y)
 
 conditional_prob_h(
     rbm::Union{RBMClassifier, GRBMClassifier},
@@ -230,7 +227,7 @@ function reconstruct(rbm::AbstractRBM, v::Vector{<:Number})
     return v_reconstructed
 end
 
-function classify(rbm::RBMClassifiers, v::Vector{<:Number})
+function classify(rbm::GRBMClassifier, v::Vector{<:Number})
     y = conditional_prob_y_given_v(rbm, v)
     return y
 end
@@ -252,7 +249,7 @@ function copy_rbm(rbm::RBMClassifier)
     return RBMClassifier(copy(rbm.W), copy(rbm.U), copy(rbm.a), copy(rbm.b), copy(rbm.c), rbm.n_visible, rbm.n_hidden, rbm.n_classifiers)
 end
 
-function copy_rbm!(rbm_src::RBMClassifiers, rbm_target::RBMClassifier)
+function copy_rbm!(rbm_src::GRBMClassifier, rbm_target::RBMClassifier)
     rbm_target.W .= rbm_src.W
     rbm_target.U .= rbm_src.U
     rbm_target.a .= rbm_src.a

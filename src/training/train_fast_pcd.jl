@@ -3,7 +3,6 @@ function fast_persistent_contrastive_divergence!(
     x,
     mini_batches::Vector{UnitRange{Int}},
     fantasy_data::Vector{FantasyData};
-    steps::Int = 1,
     learning_rate::Float64 = 0.1,
     fast_learning_rate::Float64 = 0.1,
 )
@@ -49,19 +48,18 @@ function fast_persistent_contrastive_divergence!(
 
         # Update fantasy data
         t_gibbs = time()
-        _update_fantasy_data!(rbm, fantasy_data, W_fast, a_fast, b_fast, steps)
+        _update_fantasy_data!(rbm, fantasy_data, W_fast, a_fast, b_fast)
         total_t_gibbs += time() - t_gibbs
     end
     return total_t_sample, total_t_gibbs, total_t_update
 end
 
 function fast_persistent_contrastive_divergence!(
-    rbm::RBMClassifiers,
+    rbm::GRBMClassifier,
     x,
     label,
     mini_batches::Vector{UnitRange{Int}},
     fantasy_data::Vector{FantasyDataClassifier};
-    steps::Int = 1,
     learning_rate::Float64 = 0.1,
     label_learning_rate::Float64 = 0.1,
     fast_learning_rate::Float64 = 0.1,
@@ -120,7 +118,7 @@ function fast_persistent_contrastive_divergence!(
 
         # Update fantasy data
         t_gibbs = time()
-        _update_fantasy_data!(rbm, fantasy_data, W_fast, U_fast, a_fast, b_fast, c_fast, steps)
+        _update_fantasy_data!(rbm, fantasy_data, W_fast, U_fast, a_fast, b_fast, c_fast)
         total_t_gibbs += time() - t_gibbs
     end
     return total_t_sample, total_t_gibbs, total_t_update
@@ -132,7 +130,6 @@ end
         x_train,
         ::Type{FastPCD};
         n_epochs::Int,
-        gibbs_steps::Int = 1,
         batch_size::Int,
         learning_rate::Vector{Float64},
         fast_learning_rate::Float64,
@@ -154,7 +151,6 @@ Tieleman and Hinton (2009) "Using fast weights to improve persistent contrastive
   - `rbm::AbstractRBM`: The RBM to train.
   - `x_train`: The training data.
   - `n_epochs::Int`: The number of epochs to train the RBM.
-  - `gibbs_steps::Int`: The number of Gibbs Sampling steps to use.
   - `batch_size::Int`: The size of the mini-batches.
   - `learning_rate::Vector{Float64}`: The learning rate for each epoch.
   - `fast_learning_rate::Float64`: The fast learning rate.
@@ -171,7 +167,6 @@ function train!(
     x_train,
     ::Type{FastPCD};
     n_epochs::Int,
-    gibbs_steps::Int = 1,
     batch_size::Int,
     learning_rate::Vector{Float64},
     fast_learning_rate::Float64,
@@ -203,7 +198,6 @@ function train!(
             x_train,
             mini_batches,
             fantasy_data;
-            steps = gibbs_steps,
             learning_rate = learning_rate[epoch],
             fast_learning_rate = fast_learning_rate,
         )
@@ -253,7 +247,6 @@ end
         label_train,
         ::Type{FastPCD};
         n_epochs::Int,
-        gibbs_steps::Int = 1,
         batch_size::Int,
         learning_rate::Vector{Float64},
         fast_learning_rate::Float64,
@@ -278,7 +271,6 @@ Tieleman and Hinton (2009) "Using fast weights to improve persistent contrastive
   - `x_train`: The training data.
   - `label_train`: The training labels.
   - `n_epochs::Int`: The number of epochs to train the RBM.
-  - `gibbs_steps::Int`: The number of Gibbs Sampling steps to use.
   - `batch_size::Int`: The size of the mini-batches.
   - `learning_rate::Vector{Float64}`: The learning rate for each epoch.
   - `fast_learning_rate::Float64`: The fast learning rate.
@@ -294,12 +286,11 @@ Tieleman and Hinton (2009) "Using fast weights to improve persistent contrastive
   - `file_path`: The file path to save the metrics.
 """
 function train!(
-    rbm::RBMClassifiers,
+    rbm::GRBMClassifier,
     x_train,
     label_train,
     ::Type{FastPCD};
     n_epochs::Int,
-    gibbs_steps::Int = 1,
     batch_size::Int,
     learning_rate::Vector{Float64},
     fast_learning_rate::Float64 = 0.1,
@@ -335,7 +326,6 @@ function train!(
             label_train,
             mini_batches,
             fantasy_data;
-            steps = gibbs_steps,
             learning_rate = learning_rate[epoch],
             label_learning_rate = label_learning_rate[epoch],
             fast_learning_rate = fast_learning_rate,
