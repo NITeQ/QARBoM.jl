@@ -10,19 +10,19 @@ function _evaluate(::Type{Accuracy}, metrics_dict::Dict{String, Vector{Float64}}
     sample = kwargs[:y_sample]
     predicted = kwargs[:y_pred]
     tp = all(i -> i == 1, round.(Int, sample) .== round.(Int, predicted)) ? 1 : 0
-    return metrics_dict["accuracy"][epoch] += tp / dataset_size
+    return metrics_dict["accuracy"][end] += tp / dataset_size
 end
 
 function _evaluate(::Type{MeanSquaredError}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
     sample = kwargs[:x_sample]
     predicted = kwargs[:x_pred]
-    return metrics_dict["mse"][epoch] += sum((sample .- predicted) .^ 2) / dataset_size
+    return metrics_dict["mse"][end] += sum((sample .- predicted) .^ 2) / dataset_size
 end
 
 function _evaluate(::Type{CrossEntropy}, metrics_dict::Dict{String, Vector{Float64}}, epoch::Int, dataset_size::Int; kwargs...)
     sample = kwargs[:y_sample]
     predicted = kwargs[:y_pred]
-    return metrics_dict["cross_entropy"][epoch] += sum(sample .* log.(predicted) .+ (1 .- sample) .* log.(1 .- predicted)) / dataset_size
+    return metrics_dict["cross_entropy"][end] += sum(sample .* log.(predicted) .+ (1 .- sample) .* log.(1 .- predicted)) / dataset_size
 end
 
 function evaluate(
@@ -33,6 +33,9 @@ function evaluate(
     metrics_dict::Dict{String, Vector{Float64}},
     epoch::Int,
 ) where {T <: Union{Float64, Int}}
+    for key in keys(metrics_dict)
+        push!(metrics_dict[key], 0.0)
+    end
     dataset_size = length(x_dataset)
     for sample_i in eachindex(x_dataset)
         vis = x_dataset[sample_i]
@@ -54,6 +57,9 @@ function evaluate(
     metrics_dict::Dict{String, Vector{Float64}},
     epoch::Int,
 ) where {T <: Union{Float64, Int}}
+    for key in keys(metrics_dict)
+        push!(metrics_dict[key], 0.0)
+    end
     dataset_size = length(x_dataset)
     for sample_i in eachindex(x_dataset)
         vis = x_dataset[sample_i]

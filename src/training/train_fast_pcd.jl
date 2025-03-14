@@ -187,6 +187,12 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
+    if !isnothing(x_test_dataset)
+        evaluate(rbm, metrics, x_test_dataset, metrics_dict, 0)
+    else
+        evaluate(rbm, metrics, x_train, metrics_dict, 0)
+    end
+
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     println("Setting mini-batches")
     mini_batches = _set_mini_batches(length(x_train), batch_size)
@@ -194,10 +200,6 @@ function train!(
     println("Starting training")
 
     for epoch in 1:n_epochs
-        for key in keys(metrics_dict)
-            push!(metrics_dict[key], 0.0)
-        end
-
         t_sample, t_gibbs, t_update = fast_persistent_contrastive_divergence!(
             rbm,
             x_train,
@@ -318,6 +320,12 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
+    if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+        evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict, 0)
+    else
+        evaluate(rbm, metrics, x_train, label_train, metrics_dict, 0)
+    end
+
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     println("Setting mini-batches")
     mini_batches = _set_mini_batches(length(x_train), batch_size)
@@ -325,10 +333,6 @@ function train!(
     println("Starting training")
 
     for epoch in 1:n_epochs
-        for key in keys(metrics_dict)
-            push!(metrics_dict[key], 0.0)
-        end
-
         t_sample, t_gibbs, t_update = fast_persistent_contrastive_divergence!(
             rbm,
             x_train,
