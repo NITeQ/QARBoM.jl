@@ -61,10 +61,10 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
-    if !isnothing(x_test_dataset)
-        evaluate(rbm, metrics, x_test_dataset, metrics_dict, 0)
+    initial_metrics = if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+        initial_evaluation(rbm, metrics, x_test_dataset, y_test_dataset)
     else
-        evaluate(rbm, metrics, x_train, metrics_dict, 0)
+        initial_evaluation(rbm, metrics, x_train)
     end
 
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
@@ -109,6 +109,8 @@ function train!(
         copy_rbm!(best_rbm, rbm)
     end
 
+    metrics_dict = merge_metrics(initial_metrics, metrics_dict)
+
     CSV.write(file_path, DataFrame(metrics_dict))
 
     _log_finish(n_epochs, total_t_sample, total_t_gibbs, total_t_update)
@@ -137,10 +139,10 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
-    if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
-        evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict, 0)
+    initial_metrics = if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+        initial_evaluation(rbm, metrics, x_test_dataset, y_test_dataset)
     else
-        evaluate(rbm, metrics, x_train, label_train, metrics_dict, 0)
+        initial_evaluation(rbm, metrics, x_train, label_train)
     end
 
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
@@ -186,6 +188,8 @@ function train!(
     if store_best_rbm
         copy_rbm!(best_rbm, rbm)
     end
+
+    metrics_dict = merge_metrics(initial_metrics, metrics_dict)
 
     CSV.write(file_path, DataFrame(metrics_dict))
 
