@@ -117,7 +117,6 @@ function initial_evaluation(
     return metrics_dict
 end
 
-
 function _initialize_metrics(metrics::Vector{<:DataType})
     metrics_dict = Dict{String, Vector{Float64}}()
     for metric in metrics
