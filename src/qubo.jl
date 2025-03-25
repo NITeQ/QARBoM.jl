@@ -41,7 +41,7 @@ function _create_qubo_model(rbm::RBM, sampler, model_setup; kwargs...)
     return model
 end
 
-function _create_qubo_model(rbm::RBMClassifier, sampler, model_setup; kwargs...)
+function _create_qubo_model(rbm::Union{RBMClassifier, GRBMClassifier}, sampler, model_setup; kwargs...)
     max_visible = get(kwargs, :max_visible, nothing)
     min_visible = get(kwargs, :min_visible, nothing)
 
@@ -83,7 +83,7 @@ function _update_qubo_model!(model, rbm::AbstractRBM)
     )
 end
 
-function _update_qubo_model!(model, rbm::RBMClassifier)
+function _update_qubo_model!(model, rbm::Union{RBMClassifier, GRBMClassifier})
     @objective(
         model,
         Min,
@@ -115,7 +115,7 @@ function _qubo_sample(rbm::AbstractRBM, model)
     return v_sampled, h_sampled
 end
 
-function _qubo_sample(rbm::RBMClassifier, model; kwargs...)
+function _qubo_sample(rbm::Union{RBMClassifier, GRBMClassifier}, model; kwargs...)
     optimize!(model)
     v_sampled = zeros(Float64, num_visible_nodes(rbm))
     label_sampled = zeros(Float64, num_label_nodes(rbm))

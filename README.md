@@ -9,6 +9,8 @@
 
 [build-img]: https://github.com/NITeQ/QARBoM.jl/actions/workflows/ci.yml/badge.svg?branch=main
 ![Build Status][build-img]
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14841099.svg)](https://doi.org/10.5281/zenodo.14841099)
+
 
 </div>
 
@@ -58,7 +60,7 @@ QARBoM.train!(
     train_data,
     CD; 
     n_epochs = N_EPOCHS,  
-    cd_steps = 3, # number of gibbs sampling steps
+    gibbs_steps = 3, # number of gibbs sampling steps
     learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
     metrics = [MeanSquaredError], # the metrics you want to track
     x_test_dataset = test_data,

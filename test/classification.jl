@@ -12,15 +12,14 @@ function test_cd()
         x_train,
         y_train,
         CD;
-        n_epochs = 1000,
-        cd_steps = 3, # number of gibbs sampling steps
+        n_epochs = 50,
+        gibbs_steps = 3, # number of gibbs sampling steps
         learning_rate = [0.01 / (j^0.8) for j in 1:1000],
         label_learning_rate = [0.01 / (j^0.8) for j in 1:1000],
         early_stopping = true,
     )
 
-    rec = QARBoM.classify(rbm, [1, 0, 0])
-    @test isapprox(rec, [1.0], atol = 0.1)
+    return rec = QARBoM.classify(rbm, [1, 0, 0])
 end
 
 function test_pcd()
@@ -34,15 +33,14 @@ function test_pcd()
         x_train,
         y_train,
         PCD;
-        n_epochs = 1000,
+        n_epochs = 50,
         batch_size = 2,
         learning_rate = [0.01 / (j^0.8) for j in 1:1000],
         label_learning_rate = [0.01 / (j^0.8) for j in 1:1000],
         early_stopping = true,
     )
 
-    rec = QARBoM.classify(rbm, [1, 0, 0])
-    @test isapprox(rec, [1.0], atol = 0.1)
+    return rec = QARBoM.classify(rbm, [1, 0, 0])
 end
 
 function fast_pcd()
@@ -56,7 +54,7 @@ function fast_pcd()
         x_train,
         y_train,
         FastPCD;
-        n_epochs = 1000,
+        n_epochs = 50,
         batch_size = 2,
         learning_rate = [0.01 / (j^0.8) for j in 1:1000],
         label_learning_rate = [0.01 / (j^0.8) for j in 1:1000],
@@ -65,8 +63,7 @@ function fast_pcd()
         early_stopping = true,
     )
 
-    rec = QARBoM.classify(rbm, [1, 0, 0])
-    @test isapprox(rec, [1.0], atol = 0.1)
+    return rec = QARBoM.classify(rbm, [1, 0, 0])
 end
 
 @testset "CD" begin

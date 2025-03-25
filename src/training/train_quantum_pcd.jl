@@ -40,7 +40,7 @@ function persistent_qubo!(
 end
 
 function persistent_qubo!(
-    rbm::RBMClassifier,
+    rbm::RBMClassifiers,
     model,
     x,
     label,
@@ -108,6 +108,12 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
+    initial_metrics = if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+        initial_evaluation(rbm, metrics, x_test_dataset, y_test_dataset)
+    else
+        initial_evaluation(rbm, metrics, x_train)
+    end
+
     println("Setting up QUBO model")
     qubo_model = _create_qubo_model(rbm, sampler, model_setup; kwargs...)
     total_t_sample, total_t_qs, total_t_update = 0.0, 0.0, 0.0
@@ -159,6 +165,8 @@ function train!(
         copy_rbm!(best_rbm, rbm)
     end
 
+    metrics_dict = merge_metrics(initial_metrics, metrics_dict)
+
     CSV.write(file_path, DataFrame(metrics_dict))
 
     _log_finish_quantum(n_epochs, total_t_sample, total_t_qs, total_t_update)
@@ -168,11 +176,12 @@ end
 
 """
     train!(
-        rbm::RBMClassifier,
+        rbm::RBMClassifiers,
         x_train,
         label_train,
         ::Type{QSampling};
         n_epochs::Int,
+        gibbs_steps::Int,
         batch_size::Int,
         learning_rate::Vector{Float64},
         label_learning_rate::Vector{Float64},
@@ -198,6 +207,7 @@ Train an RBMClassifier using Quantum sampling.
   - `x_train`: The training data.
   - `label_train`: The training labels.
   - `n_epochs::Int`: The number of epochs to train the RBM.
+  - `gibbs_steps::Int`: The number of Gibbs steps to use.
   - `batch_size::Int`: The size of the mini-batches.
   - `learning_rate::Vector{Float64}`: The learning rate for each epoch.
   - `label_learning_rate::Vector{Float64}`: The learning rate for the labels for each epoch.
@@ -218,7 +228,7 @@ Train an RBMClassifier using Quantum sampling.
       + `min_visible::Vector{Float64}`: The minimum value for the visible nodes.
 """
 function train!(
-    rbm::RBMClassifier,
+    rbm::RBMClassifiers,
     x_train,
     label_train,
     ::Type{QSampling};
@@ -242,6 +252,16 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
+    epoch = get(kwargs, :start_epoch, 1)
+
+    if epoch == 1
+        initial_metrics = if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+            initial_evaluation(rbm, metrics, x_test_dataset, y_test_dataset)
+        else
+            initial_evaluation(rbm, metrics, x_train, label_train)
+        end
+    end
+
     println("Setting up QUBO model")
     qubo_model = _create_qubo_model(rbm, sampler, model_setup; kwargs...)
     total_t_sample, total_t_qs, total_t_update = 0.0, 0.0, 0.0
@@ -249,12 +269,9 @@ function train!(
     mini_batches = _set_mini_batches(length(x_train), batch_size)
     println("Starting training")
 
-    epoch = get(kwargs, :start_epoch, 1)
+    
     while epoch <= n_epochs
         try
-            for key in keys(metrics_dict)
-                push!(metrics_dict[key], 0.0)
-            end
             t_sample, t_qs, t_update =
                 persistent_qubo!(
                     rbm,
@@ -316,6 +333,7 @@ function train!(
         append!(df, df_new)
         CSV.write(file_path, df)
     else 
+        metrics_dict = merge_metrics(initial_metrics, metrics_dict)
         CSV.write(file_path, DataFrame(metrics_dict))
     end
 

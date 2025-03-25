@@ -4,6 +4,7 @@ function persistent_contrastive_divergence!(
     x,
     mini_batches::Vector{UnitRange{Int}},
     fantasy_data::Vector{FantasyData};
+    steps::Int = 1,
     learning_rate::Float64 = 0.1,
 )
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
@@ -11,7 +12,7 @@ function persistent_contrastive_divergence!(
         index = 1
 
         t_gibbs = time()
-        _update_fantasy_data!(rbm, fantasy_data)
+        _update_fantasy_data!(rbm, fantasy_data, steps)
         total_t_gibbs += time() - t_gibbs
 
         δ_W = zeros(size(rbm.W))
@@ -43,11 +44,12 @@ end
 
 # PCD-K mini-batch algorithm
 function persistent_contrastive_divergence!(
-    rbm::RBMClassifier,
+    rbm::Union{RBMClassifier, GRBMClassifier},
     x,
     label,
     mini_batches::Vector{UnitRange{Int}},
     fantasy_data::Vector{FantasyDataClassifier};
+    steps::Int = 1,
     learning_rate::Float64 = 0.1,
     label_learning_rate::Float64 = 0.1,
 )
@@ -86,7 +88,7 @@ function persistent_contrastive_divergence!(
 
         # Update fantasy data
         t_gibbs = time()
-        _update_fantasy_data!(rbm, fantasy_data)
+        _update_fantasy_data!(rbm, fantasy_data, steps)
         total_t_gibbs += time() - t_gibbs
     end
     return total_t_sample, total_t_gibbs, total_t_update
@@ -133,6 +135,7 @@ function train!(
     x_train,
     ::Type{PCD};
     n_epochs::Int,
+    gibbs_steps::Int = 1,
     batch_size::Int,
     learning_rate::Vector{Float64},
     metrics::Vector{<:DataType} = [MeanSquaredError],
@@ -147,6 +150,12 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
+    initial_metrics = if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+        initial_evaluation(rbm, metrics, x_test_dataset, y_test_dataset)
+    else
+        initial_evaluation(rbm, metrics, x_train)
+    end
+
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     println("Setting mini-batches")
     mini_batches = _set_mini_batches(length(x_train), batch_size)
@@ -154,15 +163,12 @@ function train!(
     println("Starting training")
 
     for epoch in 1:n_epochs
-        for key in keys(metrics_dict)
-            push!(metrics_dict[key], 0.0)
-        end
-
         t_sample, t_gibbs, t_update = persistent_contrastive_divergence!(
             rbm,
             x_train,
             mini_batches,
             fantasy_data;
+            steps = gibbs_steps,
             learning_rate = learning_rate[epoch],
         )
 
@@ -199,6 +205,8 @@ function train!(
         copy_rbm!(best_rbm, rbm)
     end
 
+    metrics_dict = merge_metrics(initial_metrics, metrics_dict)
+
     CSV.write(file_path, DataFrame(metrics_dict))
 
     _log_finish(n_epochs, total_t_sample, total_t_gibbs, total_t_update)
@@ -208,7 +216,7 @@ end
 
 """
     train!(
-        rbm::RBMClassifier,
+        rbm::Union{RBMClassifier, GRBMClassifier},
         x_train,
         label_train,
         ::Type{PCD};
@@ -248,11 +256,12 @@ Train an RBM classifier using the Persistent Contrastive Divergence (PCD) algori
   - `file_path`: The file path to store the metrics.
 """
 function train!(
-    rbm::RBMClassifier,
+    rbm::Union{RBMClassifier, GRBMClassifier},
     x_train,
     label_train,
     ::Type{PCD};
     n_epochs::Int,
+    gibbs_steps::Int = 1,
     batch_size::Int,
     learning_rate::Vector{Float64},
     label_learning_rate::Vector{Float64},
@@ -269,6 +278,12 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
+    initial_metrics = if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+        initial_evaluation(rbm, metrics, x_test_dataset, y_test_dataset)
+    else
+        initial_evaluation(rbm, metrics, x_train, label_train)
+    end
+
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     println("Setting mini-batches")
     mini_batches = _set_mini_batches(length(x_train), batch_size)
@@ -276,16 +291,13 @@ function train!(
     println("Starting training")
 
     for epoch in 1:n_epochs
-        for key in keys(metrics_dict)
-            push!(metrics_dict[key], 0.0)
-        end
-
         t_sample, t_gibbs, t_update = persistent_contrastive_divergence!(
             rbm,
             x_train,
             label_train,
             mini_batches,
             fantasy_data;
+            steps = gibbs_steps,
             learning_rate = learning_rate[epoch],
             label_learning_rate = label_learning_rate[epoch],
         )
@@ -303,7 +315,6 @@ function train!(
         if _diverged(metrics_dict, epoch, stopping_metric)
             if early_stopping
                 if patience == 0
-                    println("Early stopping at epoch $epoch")
                     break
                 end
                 patience -= 1
@@ -322,6 +333,8 @@ function train!(
     if store_best_rbm
         copy_rbm!(best_rbm, rbm)
     end
+
+    metrics_dict = merge_metrics(initial_metrics, metrics_dict)
 
     CSV.write(file_path, DataFrame(metrics_dict))
 

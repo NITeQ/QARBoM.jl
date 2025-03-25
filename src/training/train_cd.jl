@@ -20,7 +20,7 @@ function contrastive_divergence!(rbm::AbstractRBM, x; steps::Int, learning_rate:
     return total_t_sample, total_t_gibbs, total_t_update
 end
 
-function contrastive_divergence!(rbm::RBMClassifier, x, y; steps::Int, learning_rate::Float64 = 0.1, label_learning_rate::Float64 = 0.1)
+function contrastive_divergence!(rbm::RBMClassifiers, x, y; steps::Int, learning_rate::Float64 = 0.1, label_learning_rate::Float64 = 0.1)
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
     for sample_i in eachindex(x)
         v_data = x[sample_i]
@@ -47,7 +47,7 @@ function train!(
     x_train,
     ::Type{CD};
     n_epochs::Int,
-    cd_steps::Int = 3,
+    gibbs_steps::Int = 3,
     learning_rate::Vector{Float64},
     metrics::Vector{<:DataType} = [MeanSquaredError],
     early_stopping::Bool = false,
@@ -61,17 +61,19 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
+    initial_metrics = if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+        initial_evaluation(rbm, metrics, x_test_dataset, y_test_dataset)
+    else
+        initial_evaluation(rbm, metrics, x_train)
+    end
+
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
 
     for epoch in 1:n_epochs
-        for key in keys(metrics_dict)
-            push!(metrics_dict[key], 0.0)
-        end
-
         t_sample, t_gibbs, t_update = contrastive_divergence!(
             rbm,
             x_train;
-            steps = cd_steps,
+            steps = gibbs_steps,
             learning_rate = learning_rate[epoch],
         )
         total_t_sample += t_sample
@@ -107,6 +109,8 @@ function train!(
         copy_rbm!(best_rbm, rbm)
     end
 
+    metrics_dict = merge_metrics(initial_metrics, metrics_dict)
+
     CSV.write(file_path, DataFrame(metrics_dict))
 
     _log_finish(n_epochs, total_t_sample, total_t_gibbs, total_t_update)
@@ -114,12 +118,12 @@ function train!(
 end
 
 function train!(
-    rbm::RBMClassifier,
+    rbm::RBMClassifiers,
     x_train,
     label_train,
     ::Type{CD};
     n_epochs::Int,
-    cd_steps::Int = 3,
+    gibbs_steps::Int = 3,
     learning_rate::Vector{Float64},
     label_learning_rate::Vector{Float64},
     metrics::Vector{<:DataType} = [Accuracy],
@@ -135,18 +139,20 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
+    initial_metrics = if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+        initial_evaluation(rbm, metrics, x_test_dataset, y_test_dataset)
+    else
+        initial_evaluation(rbm, metrics, x_train, label_train)
+    end
+
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
 
     for epoch in 1:n_epochs
-        for key in keys(metrics_dict)
-            push!(metrics_dict[key], 0.0)
-        end
-
         t_sample, t_gibbs, t_update = contrastive_divergence!(
             rbm,
             x_train,
             label_train;
-            steps = cd_steps,
+            steps = gibbs_steps,
             learning_rate = learning_rate[epoch],
             label_learning_rate = label_learning_rate[epoch],
         )
@@ -182,6 +188,8 @@ function train!(
     if store_best_rbm
         copy_rbm!(best_rbm, rbm)
     end
+
+    metrics_dict = merge_metrics(initial_metrics, metrics_dict)
 
     CSV.write(file_path, DataFrame(metrics_dict))
 
