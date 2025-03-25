@@ -84,7 +84,7 @@ function initial_evaluation(
         vis_pred = QARBoM.reconstruct(rbm, vis)
 
         for metric in metrics
-            _evaluate(metric, metrics_dict, 1, dataset_size; x_sample = vis, x_pred = vis_pred)
+            _evaluate(metric, metrics_dict, dataset_size; x_sample = vis, x_pred = vis_pred)
         end
     end
     return metrics_dict
@@ -109,7 +109,7 @@ function initial_evaluation(
         rounded_y_pred = [(y_pred[i] == max_val) ? 1 : 0 for i in eachindex(y_pred)]
 
         for metric in metrics
-            _evaluate(metric, metrics_dict, 1, dataset_size; y_sample = label, y_pred = rounded_y_pred)
+            _evaluate(metric, metrics_dict, dataset_size; y_sample = label, y_pred = rounded_y_pred)
         end
     end
     return metrics_dict
@@ -157,11 +157,11 @@ function _diverged(metrics_dict::Dict{String, Vector{Float64}}, ::Type{Accuracy}
     if length(metrics_dict["accuracy"]) == 1
         return false
     end
-    if metrics_dict["accuracy"][epoch] < metrics_dict["accuracy"][epoch-1]
-        println("Accuracy decreased from $(metrics_dict["accuracy"][epoch-1]) to $(metrics_dict["accuracy"][epoch])")
+    if metrics_dict["accuracy"][end] < metrics_dict["accuracy"][end-1]
+        println("Accuracy decreased from $(metrics_dict["accuracy"][end-1]) to $(metrics_dict["accuracy"][end])")
         return true
-    elseif metrics_dict["accuracy"][epoch] < maximum(metrics_dict["accuracy"])
-        println("Accuracy $(metrics_dict["accuracy"][epoch]) is not the maximum value $(maximum(metrics_dict["accuracy"]))")
+    elseif metrics_dict["accuracy"][end] < maximum(metrics_dict["accuracy"])
+        println("Accuracy $(metrics_dict["accuracy"][end]) is not the maximum value $(maximum(metrics_dict["accuracy"]))")
         return true
     end
     return false
