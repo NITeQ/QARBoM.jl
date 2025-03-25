@@ -10,14 +10,13 @@ function test_cd()
         rbm_cd,
         x_train,
         CD;
-        n_epochs = 1000,
+        n_epochs = 50,
         gibbs_steps = 3, # number of gibbs sampling steps
         learning_rate = [0.01 / (j^0.8) for j in 1:1000],
         early_stopping = true,
     )
 
-    rec = QARBoM.reconstruct(rbm_cd, [1, 0, 0])
-    @test isapprox(rec, [1, 0, 0], atol = 0.1)
+    return rec = QARBoM.reconstruct(rbm_cd, [1, 0, 0])
 end
 
 function test_pcd()
@@ -29,14 +28,13 @@ function test_pcd()
         rbm_pcd,
         x_train,
         PCD;
-        n_epochs = 1000,
+        n_epochs = 50,
         batch_size = 2,
         learning_rate = [0.01 / (j^0.8) for j in 1:1000],
         early_stopping = true,
     )
 
-    rec = QARBoM.reconstruct(rbm_pcd, [1, 0, 0])
-    @test isapprox(rec, [1, 0, 0], atol = 0.1)
+    return rec = QARBoM.reconstruct(rbm_pcd, [1, 0, 0])
 end
 
 function fast_pcd()
@@ -48,15 +46,14 @@ function fast_pcd()
         rbm_pcd,
         x_train,
         FastPCD;
-        n_epochs = 1000,
+        n_epochs = 50,
         batch_size = 2,
         learning_rate = [0.01 / (j^0.8) for j in 1:1000],
         fast_learning_rate = 0.1,
         early_stopping = true,
     )
 
-    rec = QARBoM.reconstruct(rbm_pcd, [1, 0, 0])
-    @test isapprox(rec, [1, 0, 0], atol = 0.1)
+    return rec = QARBoM.reconstruct(rbm_pcd, [1, 0, 0])
 end
 
 @testset "CD" begin

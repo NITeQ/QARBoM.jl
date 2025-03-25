@@ -232,7 +232,7 @@ end
 
 function classify(rbm::RBMClassifiers, v::Vector{<:Number})
     y = conditional_prob_y_given_v(rbm, v)
-    return y
+    return [l == maximum(y) ? 1 : 0 for l in y]
 end
 
 function copy_rbm(rbm::AbstractRBM)

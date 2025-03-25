@@ -61,13 +61,15 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
+    initial_metrics = if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+        initial_evaluation(rbm, metrics, x_test_dataset, y_test_dataset)
+    else
+        initial_evaluation(rbm, metrics, x_train)
+    end
+
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
 
     for epoch in 1:n_epochs
-        for key in keys(metrics_dict)
-            push!(metrics_dict[key], 0.0)
-        end
-
         t_sample, t_gibbs, t_update = contrastive_divergence!(
             rbm,
             x_train;
@@ -107,6 +109,8 @@ function train!(
         copy_rbm!(best_rbm, rbm)
     end
 
+    metrics_dict = merge_metrics(initial_metrics, metrics_dict)
+
     CSV.write(file_path, DataFrame(metrics_dict))
 
     _log_finish(n_epochs, total_t_sample, total_t_gibbs, total_t_update)
@@ -135,13 +139,15 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
+    initial_metrics = if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+        initial_evaluation(rbm, metrics, x_test_dataset, y_test_dataset)
+    else
+        initial_evaluation(rbm, metrics, x_train, label_train)
+    end
+
     total_t_sample, total_t_gibbs, total_t_update = 0.0, 0.0, 0.0
 
     for epoch in 1:n_epochs
-        for key in keys(metrics_dict)
-            push!(metrics_dict[key], 0.0)
-        end
-
         t_sample, t_gibbs, t_update = contrastive_divergence!(
             rbm,
             x_train,
@@ -182,6 +188,8 @@ function train!(
     if store_best_rbm
         copy_rbm!(best_rbm, rbm)
     end
+
+    metrics_dict = merge_metrics(initial_metrics, metrics_dict)
 
     CSV.write(file_path, DataFrame(metrics_dict))
 
