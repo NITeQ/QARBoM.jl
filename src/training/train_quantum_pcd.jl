@@ -269,7 +269,6 @@ function train!(
     mini_batches = _set_mini_batches(length(x_train), batch_size)
     println("Starting training")
 
-    
     while epoch <= n_epochs
         try
             t_sample, t_qs, t_update =
@@ -332,7 +331,7 @@ function train!(
         df_new = DataFrame(metrics_dict)
         append!(df, df_new)
         CSV.write(file_path, df)
-    else 
+    else
         metrics_dict = merge_metrics(initial_metrics, metrics_dict)
         CSV.write(file_path, DataFrame(metrics_dict))
     end
