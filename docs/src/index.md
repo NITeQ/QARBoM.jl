@@ -14,7 +14,7 @@ QARBoM is avaible through Julia's General Registry:
 ```julia-repl
 julia> import Pkg
 
-julia> Pkg.add("QARBoM")
+julia> Pkg.add("https://github.com/NITeQ/QARBoM.jl")
 
 julia> using QARBoM
 ```

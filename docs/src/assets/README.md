@@ -2,7 +2,7 @@
 
 ## [Logo](@id logo)
 
-[![QARbOM.jl Logo](logo.svg)](@ref logo)
+[![QARBoM.jl Logo](logo.svg)](@ref logo)
 
 ## Colors
 
