@@ -10,13 +10,13 @@ makedocs(;
     doctest  = true,
     clean    = true,
     sitename = "QARBoM.jl",
-    authors  = "Pedro Ripper",
+    authors  = "Pedro Ripper, João Neto and Pedro Xavier",
     workdir  = @__DIR__,
     warnonly = [:missing_docs],
     pages    = [
         "Home" => "index.md",
         "Manual" => [
-            "Introduction" => "manual/1-intro.md",
+            "Getting Started" => "manual/getting_started.md",
         ],
         "API Reference" => "api.md",
     ],
