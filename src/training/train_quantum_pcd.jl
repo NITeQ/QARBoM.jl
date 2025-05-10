@@ -226,6 +226,7 @@ Train an RBMClassifier using Quantum sampling.
 
       + `max_visible::Vector{Float64}`: The maximum value for the visible nodes.
       + `min_visible::Vector{Float64}`: The minimum value for the visible nodes.
+      + `num_evaluated_states::Int`: The top N quantum-sampled states to be considered for update.
 """
 function train!(
     rbm::RBMClassifiers,

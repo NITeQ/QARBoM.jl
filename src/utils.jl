@@ -1,4 +1,3 @@
-_sigmoid(x) = 1 / (1 + exp(-x))
 _sigmoid_derivative(x) = x .* (1.0 .- x)
 _relu(x::Float64) = max(0, x)
 
