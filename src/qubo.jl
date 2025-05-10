@@ -117,11 +117,22 @@ end
 
 function _qubo_sample(rbm::Union{RBMClassifier, GRBMClassifier}, model; kwargs...)
     optimize!(model)
+    num_evaluated_states = get(kwargs, :num_evaluated_states, 1)
     v_sampled = zeros(Float64, num_visible_nodes(rbm))
     label_sampled = zeros(Float64, num_label_nodes(rbm))
     h_sampled = zeros(Float64, num_hidden_nodes(rbm))
-    v_sampled = value.(model[:vis], result = 1)
-    h_sampled = value.(model[:hid], result = 1)
-    label_sampled = value.(model[:label], result = 1)
+
+    total_reads = sum(reads(unsafe_backend(model).optimizer, 1:num_evaluated_states))
+    if total_reads == 0
+        error("No reads were performed by the optimizer. Ensure the sampler is configured correctly.")
+    end
+
+    for i in 1:num_evaluated_states
+        sampled_reads = reads(unsafe_backend(model).optimizer, i)
+        v_sampled .+= value.(model[:vis], result = i) .* sampled_reads / total_reads
+        h_sampled .+= value.(model[:hid], result = i) .* sampled_reads / total_reads
+        label_sampled .+= value.(model[:label], result = i) .* sampled_reads / total_reads
+    end
+
     return v_sampled, h_sampled, label_sampled
 end
