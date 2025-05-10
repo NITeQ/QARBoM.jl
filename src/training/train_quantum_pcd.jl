@@ -313,11 +313,10 @@ function train!(
             _log_metrics(metrics_dict, epoch)
             epoch += 1
         catch e
-            println("Error at epoch $epoch")
+            @error "Error at epoch $epoch" exception = e
             for key in keys(metrics_dict)
                 pop!(metrics_dict[key])
             end
-            @show e
             break
         end
     end
