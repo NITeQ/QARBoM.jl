@@ -215,9 +215,9 @@ function train!(
         total_t_update += t_update
 
         if !isnothing(x_test_dataset)
-            evaluate(rbm, metrics, x_test_dataset, metrics_dict, epoch)
+            evaluate(rbm, metrics, x_test_dataset, metrics_dict)
         else
-            evaluate(rbm, metrics, x_train, metrics_dict, epoch)
+            evaluate(rbm, metrics, x_train, metrics_dict)
         end
 
         if _diverged(metrics_dict, epoch, stopping_metric)
@@ -353,9 +353,9 @@ function train!(
         total_t_update += t_update
 
         if !isnothing(x_test_dataset)
-            evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict, epoch)
+            evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict)
         else
-            evaluate(rbm, metrics, x_train, label_train, metrics_dict, epoch)
+            evaluate(rbm, metrics, x_train, label_train, metrics_dict)
         end
 
         if _diverged(metrics_dict, epoch, stopping_metric)
