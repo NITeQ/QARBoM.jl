@@ -177,9 +177,9 @@ function train!(
         total_t_update += t_update
 
         if !isnothing(x_test_dataset)
-            evaluate(rbm, metrics, x_test_dataset, metrics_dict, epoch)
+            evaluate(rbm, metrics, x_test_dataset, metrics_dict)
         else
-            evaluate(rbm, metrics, x_train, metrics_dict, epoch)
+            evaluate(rbm, metrics, x_train, metrics_dict)
         end
 
         if _diverged(metrics_dict, stopping_metric)
@@ -228,7 +228,7 @@ end
         early_stopping::Bool = false,
         store_best_rbm::Bool = true,
         patience::Int = 10,
-        stopping_metric::Type{<:EvaluationMethod} = Accuracy,
+    stopping_metric::Type{<:EvaluationMethod} = Accuracy,
         x_test_dataset = nothing,
         y_test_dataset = nothing,
         file_path = "pcd_classifier_metrics.csv",

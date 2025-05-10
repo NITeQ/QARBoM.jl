@@ -220,7 +220,7 @@ function train!(
             evaluate(rbm, metrics, x_train, metrics_dict)
         end
 
-        if _diverged(metrics_dict, epoch, stopping_metric)
+        if _diverged(metrics_dict, stopping_metric)
             if early_stopping
                 if patience == 0
                     println("Early stopping at epoch $epoch")
@@ -358,7 +358,7 @@ function train!(
             evaluate(rbm, metrics, x_train, label_train, metrics_dict)
         end
 
-        if _diverged(metrics_dict, epoch, stopping_metric)
+        if _diverged(metrics_dict, stopping_metric)
             if early_stopping
                 if patience == 0
                     println("Early stopping at epoch $epoch")
