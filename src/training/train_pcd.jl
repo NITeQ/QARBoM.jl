@@ -315,6 +315,8 @@ function train!(
         if _diverged(metrics_dict, stopping_metric)
             if early_stopping
                 if patience == 0
+                    n_epochs = epoch
+                    println("Early stopping at epoch $epoch")
                     break
                 end
                 patience -= 1

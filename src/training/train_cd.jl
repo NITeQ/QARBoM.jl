@@ -90,6 +90,7 @@ function train!(
             if early_stopping
                 if patience == 0
                     println("Early stopping at epoch $epoch")
+                    n_epochs = epoch
                     break
                 end
                 patience -= 1
@@ -170,6 +171,7 @@ function train!(
             if early_stopping
                 if patience == 0
                     println("Early stopping at epoch $epoch")
+                    n_epochs = epoch
                     break
                 end
                 patience -= 1

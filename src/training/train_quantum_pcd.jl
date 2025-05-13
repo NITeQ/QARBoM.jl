@@ -146,6 +146,7 @@ function train!(
             if early_stopping
                 if patience == 0
                     println("Early stopping at epoch $epoch")
+                    n_epochs = epoch
                     break
                 end
                 patience -= 1
@@ -336,7 +337,7 @@ function train!(
         CSV.write(file_path, DataFrame(metrics_dict))
     end
 
-    _log_finish_quantum(n_epochs, total_t_sample, total_t_qs, total_t_update)
+    _log_finish_quantum(epoch, total_t_sample, total_t_qs, total_t_update)
 
     return
 end
