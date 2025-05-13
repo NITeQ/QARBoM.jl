@@ -177,12 +177,12 @@ function train!(
         total_t_update += t_update
 
         if !isnothing(x_test_dataset)
-            evaluate(rbm, metrics, x_test_dataset, metrics_dict, epoch)
+            evaluate(rbm, metrics, x_test_dataset, metrics_dict)
         else
-            evaluate(rbm, metrics, x_train, metrics_dict, epoch)
+            evaluate(rbm, metrics, x_train, metrics_dict)
         end
 
-        if _diverged(metrics_dict, epoch, stopping_metric)
+        if _diverged(metrics_dict, stopping_metric)
             if early_stopping
                 if patience == 0
                     println("Early stopping at epoch $epoch")
@@ -228,7 +228,7 @@ end
         early_stopping::Bool = false,
         store_best_rbm::Bool = true,
         patience::Int = 10,
-        stopping_metric::Type{<:EvaluationMethod} = Accuracy,
+    stopping_metric::Type{<:EvaluationMethod} = Accuracy,
         x_test_dataset = nothing,
         y_test_dataset = nothing,
         file_path = "pcd_classifier_metrics.csv",
@@ -307,14 +307,16 @@ function train!(
         total_t_update += t_update
 
         if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
-            evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict, epoch)
+            evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict)
         else
-            evaluate(rbm, metrics, x_train, label_train, metrics_dict, epoch)
+            evaluate(rbm, metrics, x_train, label_train, metrics_dict)
         end
 
-        if _diverged(metrics_dict, epoch, stopping_metric)
+        if _diverged(metrics_dict, stopping_metric)
             if early_stopping
                 if patience == 0
+                    n_epochs = epoch
+                    println("Early stopping at epoch $epoch")
                     break
                 end
                 patience -= 1
