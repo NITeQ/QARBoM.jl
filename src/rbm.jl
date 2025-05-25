@@ -92,9 +92,9 @@ function GRBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int)
 end
 
 function GRBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, W::Matrix{Float64}, U::Matrix{Float64})
-    a = zeros(n_visible)
-    b = zeros(n_hidden)
-    c = zeros(n_classifiers)
+    a = ones(n_visible) * 1e-5
+    b = ones(n_hidden) * 1e-5
+    c = ones(n_classifiers) * 1e-5
     return GRBMClassifier(copy(W), copy(U), a, b, c, n_visible, n_hidden, n_classifiers)
 end
 

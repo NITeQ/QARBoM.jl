@@ -70,7 +70,6 @@ function persistent_qubo!(
 
             # Update hyperparameter
             t_update = time()
-            t_update = time()
             δ_W += (v_data * h_data' .- v_model * h_model')
             δ_U += (label_data * h_data' .- label_model * h_model')
             δ_a += (v_data .- v_model)
@@ -228,6 +227,7 @@ Train an RBMClassifier using Quantum sampling.
       + `max_visible::Vector{Float64}`: The maximum value for the visible nodes.
       + `min_visible::Vector{Float64}`: The minimum value for the visible nodes.
       + `num_evaluated_states::Int`: The top N quantum-sampled states to be considered for update.
+      + `variable_encoding_tolerance::Float64`: Custom tolerance for the variable encoding
 """
 function train!(
     rbm::RBMClassifiers,
