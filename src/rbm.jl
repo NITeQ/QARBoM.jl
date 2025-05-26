@@ -92,9 +92,9 @@ function GRBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int)
 end
 
 function GRBMClassifier(n_visible::Int, n_hidden::Int, n_classifiers::Int, W::Matrix{Float64}, U::Matrix{Float64})
-    a = zeros(n_visible)
-    b = zeros(n_hidden)
-    c = zeros(n_classifiers)
+    a = ones(n_visible) * 1e-5
+    b = ones(n_hidden) * 1e-5
+    c = ones(n_classifiers) * 1e-5
     return GRBMClassifier(copy(W), copy(U), a, b, c, n_visible, n_hidden, n_classifiers)
 end
 
@@ -162,13 +162,13 @@ function update_rbm!(
     return
 end
 
-conditional_prob_h(rbm::AbstractRBM, v::Vector{<:Number}) = _sigmoid.(rbm.b .+ rbm.W' * v)
+conditional_prob_h(rbm::AbstractRBM, v::Vector{<:Number}) = logistic.(rbm.b .+ rbm.W' * v)
 
 conditional_prob_h(rbm::AbstractRBM, v::Vector{<:Number}, W_fast::Matrix{Float64}, b_fast::Vector{Float64}) =
-    _sigmoid.(rbm.b .+ b_fast .+ (rbm.W .+ W_fast)' * v)
+    logistic.(rbm.b .+ b_fast .+ (rbm.W .+ W_fast)' * v)
 
 conditional_prob_h(rbm::Union{RBMClassifier, GRBMClassifier}, v::Vector{<:Number}, y::Vector{<:Number}) =
-    _sigmoid.(rbm.b .+ rbm.W' * v .+ rbm.U' * y)
+    logistic.(rbm.b .+ rbm.W' * v .+ rbm.U' * y)
 
 conditional_prob_h(
     rbm::Union{RBMClassifier, GRBMClassifier},
@@ -177,27 +177,20 @@ conditional_prob_h(
     W_fast::Matrix{Float64},
     U_fast::Matrix{Float64},
     b_fast::Vector{Float64},
-) = _sigmoid.(rbm.b .+ b_fast .+ (rbm.W .+ W_fast)' * v .+ (rbm.U .+ U_fast)' * y)
+) = logistic.(rbm.b .+ b_fast .+ (rbm.W .+ W_fast)' * v .+ (rbm.U .+ U_fast)' * y)
 
-conditional_prob_v(rbm::AbstractRBM, h::Vector{<:Number}) = _sigmoid.(rbm.a .+ rbm.W * h)
+conditional_prob_v(rbm::AbstractRBM, h::Vector{<:Number}) = logistic.(rbm.a .+ rbm.W * h)
 
 conditional_prob_v(rbm::AbstractRBM, h::Vector{<:Number}, W_fast::Matrix{Float64}, a_fast::Vector{Float64}) =
-    _sigmoid.(rbm.a .+ a_fast .+ (rbm.W .+ W_fast) * h)
+    logistic.(rbm.a .+ a_fast .+ (rbm.W .+ W_fast) * h)
 
 conditional_prob_v(rbm::Union{GRBMClassifier, GRBM}, h::Vector{<:Number}) = rand.(Normal.(rbm.a .+ rbm.W * h, 1.0))
 conditional_prob_v(rbm::Union{GRBMClassifier, GRBM}, h::Vector{<:Number}, W_fast::Matrix{Float64}, a_fast::Vector{Float64}) =
     rand.(Normal.(rbm.a .+ a_fast .+ (rbm.W .+ W_fast) * h, 1.0))
 
 function conditional_prob_y_given_v(rbm::Union{RBMClassifier, GRBMClassifier}, v::Vector{<:Number})
-    class_probabilities = Vector{Float64}(undef, rbm.n_classifiers)
-
-    for y_i in 1:rbm.n_classifiers
-        class_probabilities[y_i] = rbm.c[y_i] + sum(log1pexp(rbm.U[y_i, h_j] + rbm.W[:, h_j]' * v + rbm.b[h_j]) for h_j in 1:rbm.n_hidden)
-    end
-
-    log_denominator = logsumexp(class_probabilities)
-
-    return exp.(class_probabilities .- log_denominator)
+    h = conditional_prob_h(rbm, v)
+    return conditional_prob_y_given_h(rbm, h)
 end
 
 function conditional_prob_y_given_h(rbm::Union{RBMClassifier, GRBMClassifier}, h::Vector{<:Number})

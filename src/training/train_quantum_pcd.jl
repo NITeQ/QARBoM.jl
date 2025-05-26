@@ -70,7 +70,6 @@ function persistent_qubo!(
 
             # Update hyperparameter
             t_update = time()
-            t_update = time()
             δ_W += (v_data * h_data' .- v_model * h_model')
             δ_U += (label_data * h_data' .- label_model * h_model')
             δ_a += (v_data .- v_model)
@@ -137,15 +136,16 @@ function train!(
         total_t_update += t_update
 
         if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
-            evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict, epoch)
+            evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict)
         else
-            evaluate(rbm, metrics, x_train, label_train, metrics_dict, epoch)
+            evaluate(rbm, metrics, x_train, label_train, metrics_dict)
         end
 
-        if _diverged(metrics_dict, epoch, stopping_metric)
+        if _diverged(metrics_dict, stopping_metric)
             if early_stopping
                 if patience == 0
                     println("Early stopping at epoch $epoch")
+                    n_epochs = epoch
                     break
                 end
                 patience -= 1
@@ -219,12 +219,15 @@ Train an RBMClassifier using Quantum sampling.
   - `x_test_dataset`: The test data to evaluate the model. If not set the training data will be used.
   - `y_test_dataset`: The test labels to evaluate the model. If not set the training labels will be used.
   - `file_path`: The file path to store the metrics.
+  - `handle_error::Function`: The function to handle errors during training.
   - `model_setup::Function`: The function to setup the QUBO sampler.
   - `sampler`: The QUBO sampler to use.
   - `kwargs...`: Additional arguments for the QUBO sampler
 
       + `max_visible::Vector{Float64}`: The maximum value for the visible nodes.
       + `min_visible::Vector{Float64}`: The minimum value for the visible nodes.
+      + `num_evaluated_states::Int`: The top N quantum-sampled states to be considered for update.
+      + `variable_encoding_tolerance::Float64`: Custom tolerance for the variable encoding
 """
 function train!(
     rbm::RBMClassifiers,
@@ -251,10 +254,14 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
-    initial_metrics = if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
-        initial_evaluation(rbm, metrics, x_test_dataset, y_test_dataset)
-    else
-        initial_evaluation(rbm, metrics, x_train, label_train)
+    epoch = get(kwargs, :start_epoch, 1)
+
+    if epoch == 1
+        initial_metrics = if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+            initial_evaluation(rbm, metrics, x_test_dataset, y_test_dataset)
+        else
+            initial_evaluation(rbm, metrics, x_train, label_train)
+        end
     end
 
     println("Setting up QUBO model")
@@ -264,57 +271,73 @@ function train!(
     mini_batches = _set_mini_batches(length(x_train), batch_size)
     println("Starting training")
 
-    for epoch in 1:n_epochs
-        t_sample, t_qs, t_update =
-            persistent_qubo!(
-                rbm,
-                qubo_model,
-                x_train,
-                label_train,
-                mini_batches;
-                learning_rate = learning_rate[epoch],
-                label_learning_rate = label_learning_rate[epoch],
-                kwargs...,
-            )
+    while epoch <= n_epochs
+        try
+            t_sample, t_qs, t_update =
+                persistent_qubo!(
+                    rbm,
+                    qubo_model,
+                    x_train,
+                    label_train,
+                    mini_batches;
+                    learning_rate = learning_rate[epoch],
+                    label_learning_rate = label_learning_rate[epoch],
+                    kwargs...,
+                )
 
-        total_t_sample += t_sample
-        total_t_qs += t_qs
-        total_t_update += t_update
+            total_t_sample += t_sample
+            total_t_qs += t_qs
+            total_t_update += t_update
 
-        if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
-            evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict, epoch)
-        else
-            evaluate(rbm, metrics, x_train, label_train, metrics_dict, epoch)
-        end
+            if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
+                evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict)
+            else
+                evaluate(rbm, metrics, x_train, label_train, metrics_dict)
+            end
 
-        if _diverged(metrics_dict, epoch, stopping_metric)
-            if early_stopping
-                if patience == 0
-                    println("Early stopping at epoch $epoch")
-                    break
+            if _diverged(metrics_dict, stopping_metric)
+                if early_stopping
+                    if patience == 0
+                        println("Early stopping at epoch $epoch")
+                        break
+                    end
+                    patience -= 1
                 end
-                patience -= 1
+            else
+                patience = initial_patience
+                if store_best_rbm
+                    copy_rbm!(rbm, best_rbm)
+                end
             end
-        else
-            patience = initial_patience
-            if store_best_rbm
-                copy_rbm!(rbm, best_rbm)
-            end
-        end
 
-        _log_epoch_quantum(epoch, t_sample, t_qs, t_update, total_t_sample + total_t_qs + total_t_update)
-        _log_metrics(metrics_dict, epoch)
+            _log_epoch_quantum(epoch, t_sample, t_qs, t_update, total_t_sample + total_t_qs + total_t_update)
+            _log_metrics(metrics_dict, epoch)
+            epoch += 1
+        catch e
+            @error "Error at epoch $epoch" exception = e
+            for key in keys(metrics_dict)
+                pop!(metrics_dict[key])
+            end
+            break
+        end
     end
 
     if store_best_rbm
         copy_rbm!(best_rbm, rbm)
     end
 
-    metrics_dict = merge_metrics(initial_metrics, metrics_dict)
+    if isfile(file_path) && haskey(kwargs, :start_epoch)
+        println("Appending to file")
+        df = DataFrame(CSV.File(file_path))
+        df_new = DataFrame(metrics_dict)
+        append!(df, df_new)
+        CSV.write(file_path, df)
+    else
+        metrics_dict = merge_metrics(initial_metrics, metrics_dict)
+        CSV.write(file_path, DataFrame(metrics_dict))
+    end
 
-    CSV.write(file_path, DataFrame(metrics_dict))
-
-    _log_finish_quantum(n_epochs, total_t_sample, total_t_qs, total_t_update)
+    _log_finish_quantum(epoch, total_t_sample, total_t_qs, total_t_update)
 
     return
 end

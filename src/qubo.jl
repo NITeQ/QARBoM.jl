@@ -44,6 +44,7 @@ end
 function _create_qubo_model(rbm::Union{RBMClassifier, GRBMClassifier}, sampler, model_setup; kwargs...)
     max_visible = get(kwargs, :max_visible, nothing)
     min_visible = get(kwargs, :min_visible, nothing)
+    variable_encoding_tolerance = get(kwargs, :variable_encoding_tolerance, nothing)
 
     model = Model(() -> ToQUBO.Optimizer(sampler))
     if !isnothing(max_visible) && !isnothing(min_visible)
@@ -53,7 +54,14 @@ function _create_qubo_model(rbm::Union{RBMClassifier, GRBMClassifier}, sampler, 
     end
     @variable(model, label[1:rbm.n_classifiers], Bin)
     @variable(model, hid[1:rbm.n_hidden], Bin)
-    @objective(model, Min, -vis' * rbm.W * hid - label' * rbm.U * hid)
+    @objective(model, Min, -vis' * rbm.W * hid - label' * rbm.U * hid - rbm.a'vis - rbm.b'hid - rbm.c'label)
+
+    if !isnothing(variable_encoding_tolerance)
+        for var in model[:vis]
+            ToQUBO.MOI.set(model, ToQUBO.Attributes.VariableEncodingATol(), var, variable_encoding_tolerance)
+        end
+    end
+
     model_setup(model, sampler)
     return model
 end
@@ -117,11 +125,38 @@ end
 
 function _qubo_sample(rbm::Union{RBMClassifier, GRBMClassifier}, model; kwargs...)
     optimize!(model)
+    num_evaluated_states = get(kwargs, :num_evaluated_states, nothing)
+    post_run_method = get(kwargs, :post_run_method, nothing)
     v_sampled = zeros(Float64, num_visible_nodes(rbm))
     label_sampled = zeros(Float64, num_label_nodes(rbm))
     h_sampled = zeros(Float64, num_hidden_nodes(rbm))
-    v_sampled = value.(model[:vis], result = 1)
-    h_sampled = value.(model[:hid], result = 1)
-    label_sampled = value.(model[:label], result = 1)
+
+    if isnothing(num_evaluated_states)
+        sampled_reads = reads(unsafe_backend(model).optimizer, 1)
+        v_sampled .+= value.(model[:vis], result = 1)
+        h_sampled .+= value.(model[:hid], result = 1)
+        label_sampled .+= value.(model[:label], result = 1)
+        if !isnothing(post_run_method)
+            post_run_method(model)
+        end
+        return v_sampled, h_sampled, label_sampled
+    end
+
+    total_reads = sum([reads(unsafe_backend(model).optimizer, i) for i in 1:num_evaluated_states])
+    if total_reads == 0
+        error("No reads were performed by the optimizer. Ensure the sampler is configured correctly.")
+    end
+
+    for i in 1:num_evaluated_states
+        sampled_reads = reads(unsafe_backend(model).optimizer, i)
+        v_sampled .+= value.(model[:vis], result = i) .* sampled_reads / total_reads
+        h_sampled .+= value.(model[:hid], result = i) .* sampled_reads / total_reads
+        label_sampled .+= value.(model[:label], result = i) .* sampled_reads / total_reads
+    end
+
+    if !isnothing(post_run_method)
+        post_run_method(model)
+    end
+
     return v_sampled, h_sampled, label_sampled
 end
