@@ -107,8 +107,8 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
-    initial_metrics = if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
-        initial_evaluation(rbm, metrics, x_test_dataset, y_test_dataset)
+    initial_metrics = if !isnothing(x_test_dataset)
+        initial_evaluation(rbm, metrics, x_test_dataset)
     else
         initial_evaluation(rbm, metrics, x_train)
     end
@@ -135,10 +135,10 @@ function train!(
         total_t_qs += t_qs
         total_t_update += t_update
 
-        if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
-            evaluate(rbm, metrics, x_test_dataset, y_test_dataset, metrics_dict)
+        if !isnothing(x_test_dataset)
+            evaluate(rbm, metrics, x_test_dataset, metrics_dict)
         else
-            evaluate(rbm, metrics, x_train, label_train, metrics_dict)
+            evaluate(rbm, metrics, x_train, metrics_dict)
         end
 
         if _diverged(metrics_dict, stopping_metric)
@@ -158,7 +158,7 @@ function train!(
         end
 
         _log_epoch_quantum(epoch, t_sample, t_qs, t_update, total_t_sample + total_t_qs + total_t_update)
-        _log_metrics(metrics, epoch)
+        _log_metrics(metrics_dict, epoch)
     end
 
     if store_best_rbm

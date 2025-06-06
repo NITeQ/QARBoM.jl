@@ -150,8 +150,8 @@ function train!(
     metrics_dict = _initialize_metrics(metrics)
     initial_patience = patience
 
-    initial_metrics = if !isnothing(x_test_dataset) && !isnothing(y_test_dataset)
-        initial_evaluation(rbm, metrics, x_test_dataset, y_test_dataset)
+    initial_metrics = if !isnothing(x_test_dataset)
+        initial_evaluation(rbm, metrics, x_test_dataset)
     else
         initial_evaluation(rbm, metrics, x_train)
     end

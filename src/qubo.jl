@@ -25,11 +25,11 @@ function _create_qubo_model(bottom_layer::DBNLayer, top_layer::DBNLayer, sampler
     return model
 end
 
-function _create_qubo_model(rbm::RBM, sampler, model_setup; kwargs...)
+function _create_qubo_model(rbm::Union{RBM, GRBM}, sampler, model_setup; kwargs...)
     max_visible = get(kwargs, :max_visible, nothing)
     min_visible = get(kwargs, :min_visible, nothing)
 
-    model = Model(sampler)
+    model = Model(() -> ToQUBO.Optimizer(sampler))
     model_setup(model, sampler)
     if !isnothing(max_visible) && !isnothing(min_visible)
         @variable(model, min_visible[i] <= vis[i = 1:rbm.n_visible] <= max_visible[i])
@@ -114,7 +114,7 @@ function _qubo_sample(model; has_label::Bool = false)
     end
 end
 
-function _qubo_sample(rbm::AbstractRBM, model)
+function _qubo_sample(rbm::AbstractRBM, model; kwargs...)
     optimize!(model)
     v_sampled = zeros(Float64, num_visible_nodes(rbm))
     h_sampled = zeros(Float64, num_hidden_nodes(rbm))
