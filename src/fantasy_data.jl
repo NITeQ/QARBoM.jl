@@ -84,4 +84,3 @@ function _init_fantasy_data(rbm::Union{RBMClassifier, GRBMClassifier}, batch_siz
     end
     return fantasy_data
 end
-
