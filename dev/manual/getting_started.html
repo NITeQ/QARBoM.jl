@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Getting Started · QARBoM.jl</title><meta name="title" content="Getting Started · QARBoM.jl"/><meta property="og:title" content="Getting Started · QARBoM.jl"/><meta property="twitter:title" content="Getting Started · QARBoM.jl"/><meta name="description" content="Documentation for QARBoM.jl."/><meta property="og:description" content="Documentation for QARBoM.jl."/><meta property="twitter:description" content="Documentation for QARBoM.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="../assets/favicon.ico" rel="icon" type="image/x-icon"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../index.html"><img class="docs-light-only" src="../assets/logo.svg" alt="QARBoM.jl logo"/><img class="docs-dark-only" src="../assets/logo-dark.svg" alt="QARBoM.jl logo"/></a><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../index.html">Home</a></li><li><span class="tocitem">Manual</span><ul><li class="is-active"><a class="tocitem" href="getting_started.html">Getting Started</a><ul class="internal"><li><a class="tocitem" href="#Getting-Started"><span>Getting Started</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../api.html">API Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Manual</a></li><li class="is-active"><a href="getting_started.html">Getting Started</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href="getting_started.html">Getting Started</a></li></ul></nav><div class="docs-right"><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h2 id="Getting-Started"><a class="docs-heading-anchor" href="#Getting-Started">Getting Started</a><a id="Getting-Started-1"></a><a class="docs-heading-anchor-permalink" href="#Getting-Started" title="Permalink"></a></h2><p>This guide will help you get started with <code>QARBoM.jl</code>, a Julia package for training Restricted Boltzmann Machines (RBMs) using various methods, including classical and quantum approaches.</p><h3 id="Defining-Your-Dataset-and-RBM"><a class="docs-heading-anchor" href="#Defining-Your-Dataset-and-RBM">Defining Your Dataset and RBM</a><a id="Defining-Your-Dataset-and-RBM-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-Your-Dataset-and-RBM" title="Permalink"></a></h3><p>To begin, you need a dataset and an RBM model. The dataset should be a <code>Vector{Vector{&lt;:Number}}</code>, where each inner vector represents a sample.</p><pre><code class="language-julia hljs">using QARBoM
+
+# Define your dataset
+train_data = MY_DATA_TRAIN
+test_data = MY_DATA_TEST
+
+# Create an RBM with 10 visible nodes and 5 hidden nodes
+rbm = RBM(10, 5)</code></pre><h3 id="Training-RBM-Using-Contrastive-Divergence"><a class="docs-heading-anchor" href="#Training-RBM-Using-Contrastive-Divergence">Training RBM Using Contrastive Divergence</a><a id="Training-RBM-Using-Contrastive-Divergence-1"></a><a class="docs-heading-anchor-permalink" href="#Training-RBM-Using-Contrastive-Divergence" title="Permalink"></a></h3><p>Contrastive Divergence (CD) is a common method for training RBMs. Below is an example of how to train your RBM using CD:</p><pre><code class="language-julia hljs">N_EPOCHS = 100
+BATCH_SIZE = 10
+
+QARBoM.train!(
+    rbm, 
+    train_data,
+    CD; 
+    n_epochs = N_EPOCHS,  
+    gibbs_steps = 3, 
+    learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
+    metrics = [MeanSquaredError], 
+    x_test_dataset = test_data,
+    early_stopping = true,
+    file_path = &quot;my_cd_metrics.csv&quot;,
+)</code></pre><h3 id="Training-RBM-Using-Persistent-Contrastive-Divergence"><a class="docs-heading-anchor" href="#Training-RBM-Using-Persistent-Contrastive-Divergence">Training RBM Using Persistent Contrastive Divergence</a><a id="Training-RBM-Using-Persistent-Contrastive-Divergence-1"></a><a class="docs-heading-anchor-permalink" href="#Training-RBM-Using-Persistent-Contrastive-Divergence" title="Permalink"></a></h3><p>Persistent Contrastive Divergence (PCD) is an alternative training method that maintains a persistent chain of Gibbs samples.</p><pre><code class="language-julia hljs">QARBoM.train!(
+    rbm, 
+    train_data,
+    PCD; 
+    n_epochs = N_EPOCHS, 
+    batch_size = BATCH_SIZE, 
+    learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
+    metrics = [MeanSquaredError], 
+    x_test_dataset = test_data,
+    early_stopping = true,
+    file_path = &quot;my_pcd_metrics.csv&quot;,
+)</code></pre><h3 id="Training-RBM-Using-Quantum-Sampling"><a class="docs-heading-anchor" href="#Training-RBM-Using-Quantum-Sampling">Training RBM Using Quantum Sampling</a><a id="Training-RBM-Using-Quantum-Sampling-1"></a><a class="docs-heading-anchor-permalink" href="#Training-RBM-Using-Quantum-Sampling" title="Permalink"></a></h3><p>Quantum Sampling leverages quantum annealers for training RBMs. Below is an example setup using the <code>DWave</code> package:</p><pre><code class="language-julia hljs">using DWave
+
+# Define a setup for your quantum sampler
+MOI = QARBoM.ToQUBO.MOI
+MOI.supports(::DWave.Neal.Optimizer, ::MOI.ObjectiveSense) = true
+
+function setup_dwave(model, sampler)
+  MOI.set(model, MOI.RawOptimizerAttribute(&quot;num_reads&quot;), 25)
+  MOI.set(model, MOI.RawOptimizerAttribute(&quot;num_sweeps&quot;), 100)
+end
+
+QARBoM.train!(
+    rbm, 
+    train_data,
+    QSampling; 
+    n_epochs = N_EPOCHS, 
+    batch_size = 5, 
+    learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
+    x_test_dataset = test_data,
+    early_stopping = true,
+    file_path = &quot;qubo_train.csv&quot;,
+    model_setup = setup_dwave,
+    sampler = DWave.Neal.Optimizer,
+)</code></pre><h3 id="RBM-for-Classification"><a class="docs-heading-anchor" href="#RBM-for-Classification">RBM for Classification</a><a id="RBM-for-Classification-1"></a><a class="docs-heading-anchor-permalink" href="#RBM-for-Classification" title="Permalink"></a></h3><p>For classification tasks, you can use the <code>RBMClassifier</code>, which includes label nodes in its architecture.</p><pre><code class="language-julia hljs">rbm = RBMClassifier(
+    10, # number of visible nodes
+    5,  # number of hidden nodes
+    2,  # number of label nodes
+)
+
+QARBoM.train!(
+    rbm, 
+    train_data,
+    y_train,
+    PCD; 
+    n_epochs = N_EPOCHS, 
+    batch_size = BATCH_SIZE, 
+    learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
+    label_learning_rate = [0.001/(j^0.6) for j in 1:N_EPOCHS], 
+    metrics = [Accuracy],
+    x_test_dataset = test_data,
+    y_test_dataset = y_test,
+    early_stopping = true,
+    file_path = &quot;my_pcd_metrics_classification.csv&quot;,
+)</code></pre><h3 id="Non-Binary-Visible-Nodes"><a class="docs-heading-anchor" href="#Non-Binary-Visible-Nodes">Non-Binary Visible Nodes</a><a id="Non-Binary-Visible-Nodes-1"></a><a class="docs-heading-anchor-permalink" href="#Non-Binary-Visible-Nodes" title="Permalink"></a></h3><p><code>QARBoM.jl</code> supports continuous visible nodes. Ensure your dataset is normalized to have zero mean and unit variance, as recommended by <a href="https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf">Hinton&#39;s guide</a>.</p><p>For quantum sampling with continuous visible nodes, you need to define the maximum and minimum values for each visible node:</p><pre><code class="language-julia hljs">QARBoM.train!(
+    rbm, 
+    train_data,
+    label_train_data,
+    QSampling; 
+    n_epochs = N_EPOCHS, 
+    batch_size = 5, 
+    learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
+    label_learning_rate = [0.0001/(j^0.8) for j in 1:N_EPOCHS], 
+    metrics = [Accuracy],
+    x_test_dataset = test_data,
+    y_test_dataset = label_test_data,
+    early_stopping = true,
+    file_path = &quot;qubo_train.csv&quot;,
+    model_setup = setup_dwave,
+    sampler = DWave.Neal.Optimizer,
+    max_visible = max_visible, 
+    min_visible = min_visible
+)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../index.html">« Home</a><a class="docs-footer-nextpage" href="../api.html">API Reference »</a><div class="flexbox-break"></div></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.11.4 on <span class="colophon-date" title="Monday 26 May 2025 01:42">Monday 26 May 2025</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
