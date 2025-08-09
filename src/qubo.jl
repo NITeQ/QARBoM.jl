@@ -1,35 +1,8 @@
-function _create_qubo_model(bottom_layer::DBNLayer, top_layer::DBNLayer, sampler, model_setup; label_size::Int = 0)
-    model = Model(() -> ToQUBO.Optimizer(sampler))
-
-    if label_size > 0
-        x_size = length(bottom_layer.bias) - label_size
-        if bottom_layer isa GaussianVisibleLayer
-            @variable(model, bottom_layer.min_visible[i] <= vis[i = 1:length(bottom_layer.bias[1:x_size])] <= bottom_layer.max_visible[i])
-        else
-            @variable(model, vis[1:length(bottom_layer.bias[1:x_size])], Bin)
-        end
-        @variable(model, label[1:label_size], Bin)
-        @variable(model, hid[1:length(top_layer.bias)], Bin)
-        @objective(model, Min, -vcat(vis, label)' * bottom_layer.W * hid - bottom_layer.bias'vcat(vis, label) - top_layer.bias'hid)
-    else
-        if bottom_layer isa GaussianVisibleLayer
-            @variable(model, bottom_layer.min_visible[i] <= vis[i = 1:length(bottom_layer.bias)] <= bottom_layer.max_visible[i])
-        else
-            @variable(model, vis[1:length(bottom_layer.bias)], Bin)
-        end
-        @variable(model, hid[1:length(top_layer.bias)], Bin)
-        @objective(model, Min, -vis' * bottom_layer.W * hid - bottom_layer.bias'vis - top_layer.bias'hid)
-    end
-
-    model_setup(model, sampler)
-    return model
-end
-
-function _create_qubo_model(rbm::RBM, sampler, model_setup; kwargs...)
+function _create_qubo_model(rbm::Union{RBM, GRBM}, sampler, model_setup; kwargs...)
     max_visible = get(kwargs, :max_visible, nothing)
     min_visible = get(kwargs, :min_visible, nothing)
 
-    model = Model(sampler)
+    model = Model(() -> ToQUBO.Optimizer(sampler))
     model_setup(model, sampler)
     if !isnothing(max_visible) && !isnothing(min_visible)
         @variable(model, min_visible[i] <= vis[i = 1:rbm.n_visible] <= max_visible[i])
@@ -66,23 +39,6 @@ function _create_qubo_model(rbm::Union{RBMClassifier, GRBMClassifier}, sampler, 
     return model
 end
 
-function _update_qubo_model!(model, bottom_layer::DBNLayer, top_layer::DBNLayer; label_size::Int = 0)
-    if label_size > 0
-        @objective(
-            model,
-            Min,
-            -vcat(model[:vis], model[:label])' * bottom_layer.W * model[:hid] - bottom_layer.bias'vcat(model[:vis], model[:label]) -
-            top_layer.bias'model[:hid]
-        )
-    else
-        @objective(
-            model,
-            Min,
-            -model[:vis]' * bottom_layer.W * model[:hid] - bottom_layer.bias'model[:vis] - top_layer.bias'model[:hid]
-        )
-    end
-end
-
 function _update_qubo_model!(model, rbm::AbstractRBM)
     @objective(
         model,
@@ -114,7 +70,7 @@ function _qubo_sample(model; has_label::Bool = false)
     end
 end
 
-function _qubo_sample(rbm::AbstractRBM, model)
+function _qubo_sample(rbm::AbstractRBM, model; kwargs...)
     optimize!(model)
     v_sampled = zeros(Float64, num_visible_nodes(rbm))
     h_sampled = zeros(Float64, num_hidden_nodes(rbm))

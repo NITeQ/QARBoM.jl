@@ -27,6 +27,20 @@ This package provides a framework for training Restricted Boltzmann Machines (RB
 
 Using the [QUBO.jl](https://github.com/JuliaQUBO/QUBO.jl) package, this package allows training RBMs using different quantum computers and simulators and converting continuous visible nodes to binary visible nodes seamlessly. 
 
+## Workflow
+
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="./docs/src/assets/workflow-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/src/assets/workflow-dark.svg">
+  <img height="300" alt="QARBoM.jl workflow">
+</picture>
+
+</div>
+
+
+
 ## Installation
 
 ```julia
